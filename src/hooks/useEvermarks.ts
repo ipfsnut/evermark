@@ -20,6 +20,9 @@ interface UseEvermarksReturn extends EvermarksState {
   selectEvermark: (evermark: Evermark | null) => void;
   refreshEvermarks: () => Promise<void>;
   searchEvermarks: (query: string) => Promise<Evermark[]>;
+  list: (userAddress?: string) => Promise<Evermark[]>;
+  vote: (evermarkId: string, amount: string) => Promise<boolean>;
+  getVotes: (evermarkId: string) => Promise<bigint>;
 }
 
 export function useEvermarks(): UseEvermarksReturn {
@@ -70,7 +73,7 @@ export function useEvermarks(): UseEvermarksReturn {
     }
   }, []);
 
-  // Fetch a single evermark by token ID (renamed from fetch to align with hook)
+  // Fetch a single evermark by token ID
   const fetchEvermark = useCallback(async (tokenId: string): Promise<Evermark | null> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
@@ -171,6 +174,43 @@ export function useEvermarks(): UseEvermarksReturn {
     }
   }, []);
 
+  // List evermarks (with optional user filter)
+  const list = useCallback(async (userAddress?: string): Promise<Evermark[]> => {
+    try {
+      return await evermarkService.list(userAddress);
+    } catch (error: any) {
+      console.error('Failed to list evermarks:', error);
+      throw error;
+    }
+  }, []);
+
+  // Vote on an evermark
+  const vote = useCallback(async (evermarkId: string, amount: string): Promise<boolean> => {
+    try {
+      await evermarkService.vote(evermarkId, amount);
+      
+      // After successful vote, refresh the evermark data
+      if (state.selectedEvermark?.id === evermarkId) {
+        await fetchEvermark(evermarkId);
+      }
+      
+      return true;
+    } catch (error: any) {
+      console.error('Vote failed:', error);
+      throw error;
+    }
+  }, [state.selectedEvermark?.id, fetchEvermark]);
+
+  // Get vote count for an evermark
+  const getVotes = useCallback(async (evermarkId: string): Promise<bigint> => {
+    try {
+      return await evermarkService.getVotes(evermarkId);
+    } catch (error: any) {
+      console.error('Failed to get votes:', error);
+      throw error;
+    }
+  }, []);
+
   return {
     ...state,
     createEvermark,
@@ -179,5 +219,8 @@ export function useEvermarks(): UseEvermarksReturn {
     selectEvermark,
     refreshEvermarks,
     searchEvermarks,
+    list,
+    vote,
+    getVotes,
   };
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { CreateEvermark } from '../components/CreateEvermark';
-import { CheckCircleIcon, ExclamationCircleIcon } from 'lucide-react';
+import { CheckCircleIcon, AlertCircleIcon } from 'lucide-react';
 
 const CreateEvermarkPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -28,7 +28,7 @@ const CreateEvermarkPage: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="text-center py-12">
-        <ExclamationCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <AlertCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">Not authenticated</h3>
         <p className="mt-1 text-sm text-gray-500">
           Please connect your wallet to create an evermark.
@@ -64,7 +64,7 @@ const CreateEvermarkPage: React.FC = () => {
       {errorMessage && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
           <div className="flex">
-            <ExclamationCircleIcon className="h-5 w-5 text-red-400" />
+            <AlertCircleIcon className="h-5 w-5 text-red-400" />
             <div className="ml-3">
               <p className="text-sm text-red-800">{errorMessage}</p>
             </div>

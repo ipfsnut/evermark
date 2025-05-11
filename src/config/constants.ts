@@ -46,20 +46,27 @@ export const CONTRACT_ADDRESSES = {
   EVERMARK_AUCTION: '0x8a927E063d32e46cDeDe59DeC7BbF3be06316449'
 };
 
-// Function to get environment variables that works in both browser and Node.js
+// Function to get environment variables
 function getEnvVar(key: string): string {
-  // Check if we're in a Node.js environment (Netlify functions)
+  // Check if we're in a Node.js/Netlify function environment
   if (typeof process !== 'undefined' && process.env) {
-    // Try both VITE_ prefixed and non-prefixed versions
     return process.env[key] || process.env[`VITE_${key}`] || '';
   }
   
-  // In browser environment, use import.meta.env
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return (import.meta.env as any)[`VITE_${key}`] || '';
+  // Browser environment with Vite
+  // Use globalThis to avoid import.meta issues
+  if (typeof globalThis !== 'undefined' && (globalThis as any).__VITE_ENV__) {
+    return ((globalThis as any).__VITE_ENV__[`VITE_${key}`] || '');
   }
   
-  return '';
+  // Fallback: try to access Vite's import.meta if available
+  try {
+    // This will work in browser with Vite but not in Node.js
+    return (import.meta.env as any)[`VITE_${key}`] || '';
+  } catch {
+    // Fallback to empty string if import.meta is not available
+    return '';
+  }
 }
 
 // IPFS Configuration - uses environment variables for secrets only
@@ -81,11 +88,13 @@ export const CONTRACT_CONSTANTS = {
   EVERMARK_CONTRACT_ADDRESS: CONTRACT_ADDRESSES.BOOKMARK_NFT
 };
 
-// Add this check to ensure required env vars are present
-if (!API_CONFIG.SUPABASE_URL || !API_CONFIG.SUPABASE_ANON_KEY) {
-  console.warn('Missing Supabase environment variables - database features may not work');
-}
+// Add this check to ensure required env vars are present (only in browser)
+if (typeof window !== 'undefined') {
+  if (!API_CONFIG.SUPABASE_URL || !API_CONFIG.SUPABASE_ANON_KEY) {
+    console.warn('Missing Supabase environment variables - database features may not work');
+  }
 
-if (!IPFS_CONFIG.PINATA_API_KEY || !IPFS_CONFIG.PINATA_SECRET_KEY) {
-  console.warn('Missing Pinata environment variables - IPFS features may not work');
+  if (!IPFS_CONFIG.PINATA_API_KEY || !IPFS_CONFIG.PINATA_SECRET_KEY) {
+    console.warn('Missing Pinata environment variables - IPFS features may not work');
+  }
 }

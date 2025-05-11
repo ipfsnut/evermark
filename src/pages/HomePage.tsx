@@ -3,11 +3,13 @@ import { useAuth } from '../hooks/useAuth';
 import { useEvermarks } from '../hooks/useEvermarks';
 import { Link } from 'react-router-dom';
 import { PlusIcon, BookmarkIcon, SparklesIcon } from 'lucide-react';
+import { Evermark } from '../types/evermark.types';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
   const { list: listEvermarks, loading, error } = useEvermarks();
-  const [recentEvermarks, setRecentEvermarks] = useState([]);
+  // Fix: Properly type the state as Evermark[] instead of letting TypeScript infer never[]
+  const [recentEvermarks, setRecentEvermarks] = useState<Evermark[]>([]);
 
   useEffect(() => {
     const fetchRecentEvermarks = async () => {
@@ -20,7 +22,7 @@ const HomePage: React.FC = () => {
     };
 
     fetchRecentEvermarks();
-  }, []);
+  }, [listEvermarks]);
 
   if (loading) {
     return (
@@ -80,7 +82,7 @@ const HomePage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recentEvermarks.map((evermark) => (
+            {recentEvermarks.map((evermark: Evermark) => (
               <Link 
                 key={evermark.id} 
                 to={`/evermark/${evermark.id}`}
@@ -89,7 +91,9 @@ const HomePage: React.FC = () => {
                 <div className="p-4">
                   <h3 className="font-semibold text-gray-900 truncate">{evermark.title}</h3>
                   <p className="text-sm text-gray-600 mt-1">by {evermark.author}</p>
-                  <p className="text-sm text-gray-500 mt-2 line-clamp-2">{evermark.description}</p>
+                  <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                    {evermark.description || 'No description available'}
+                  </p>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-xs text-gray-400">
                       {new Date(evermark.createdAt).toLocaleDateString()}

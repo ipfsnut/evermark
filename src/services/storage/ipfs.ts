@@ -1,69 +1,59 @@
-import PinataClient from '@pinata/sdk';
+// src/services/storage/ipfs.ts - Browser-only version
 import { IPFS_CONFIG } from '../../config/constants';
 
 class IPFSService {
-  private pinata: PinataClient | null = null;
-  
-  constructor() {
-    try {
-      if (IPFS_CONFIG.PINATA_API_KEY && IPFS_CONFIG.PINATA_SECRET_KEY) {
-        this.pinata = new PinataClient(
-          IPFS_CONFIG.PINATA_API_KEY,
-          IPFS_CONFIG.PINATA_SECRET_KEY
-        );
-      } else {
-        console.warn('IPFS: Missing Pinata credentials, service will be disabled');
-      }
-    } catch (error) {
-      console.error('IPFS: Failed to initialize Pinata client:', error);
-    }
-  }
-  
-  // Upload JSON data to IPFS
+  // Upload JSON data to IPFS via backend API
   async uploadJSON(data: any, name?: string): Promise<string> {
-    if (!this.pinata) {
-      throw new Error('IPFS service not initialized');
-    }
-    
     try {
-      const options = name ? {
-        pinataMetadata: {
-          name,
+      const response = await fetch('/.netlify/functions/ipfs-upload', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
         },
-      } : {};
+        body: JSON.stringify({
+          type: 'json',
+          data,
+          name
+        }),
+      });
       
-      const result = await this.pinata.pinJSONToIPFS(data, options);
-      return `ipfs://${result.IpfsHash}`;
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return `ipfs://${result.hash}`;
     } catch (error: any) {
       throw new Error(`Failed to upload to IPFS: ${error.message}`);
     }
   }
   
-  // Upload file to IPFS
+  // Upload file to IPFS via backend API
   async uploadFile(file: File, name?: string): Promise<string> {
-    if (!this.pinata) {
-      throw new Error('IPFS service not initialized');
-    }
-    
     try {
-      // Convert File to a format Pinata can use
-      const buffer = await file.arrayBuffer();
+      const formData = new FormData();
+      formData.append('file', file);
+      if (name) {
+        formData.append('name', name);
+      }
       
-      const options = {
-        pinataMetadata: name ? { name } : undefined,
-        pinataOptions: {
-          cidVersion: 1 as const,
-        },
-      };
+      const response = await fetch('/.netlify/functions/ipfs-upload', {
+        method: 'POST',
+        body: formData,
+      });
       
-      const result = await this.pinata.pinFileToIPFS(Buffer.from(buffer), options);
-      return `ipfs://${result.IpfsHash}`;
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      return `ipfs://${result.hash}`;
     } catch (error: any) {
       throw new Error(`Failed to upload file to IPFS: ${error.message}`);
     }
   }
   
-  // Fetch data from IPFS using fetch API
+  // Fetch data from IPFS using fetch API (browser-compatible)
   async fetchJSON<T = any>(ipfsUri: string): Promise<T> {
     try {
       const hash = this.extractHash(ipfsUri);
@@ -88,9 +78,9 @@ class IPFSService {
     return ipfsUri;
   }
   
-  // Check if IPFS is available
+  // Check if IPFS is available (always true in browser)
   isAvailable(): boolean {
-    return this.pinata !== null;
+    return true;
   }
   
   // Get IPFS gateway URL for a hash

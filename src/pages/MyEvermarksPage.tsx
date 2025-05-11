@@ -9,7 +9,7 @@ import {
   VoteIcon, 
   TrendingUpIcon, 
   ExternalLinkIcon,
-  EmptyCircleIcon 
+  CircleIcon 
 } from 'lucide-react';
 
 const MyEvermarksPage: React.FC = () => {
@@ -41,7 +41,7 @@ const MyEvermarksPage: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="text-center py-12">
-        <EmptyCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <CircleIcon className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">Not authenticated</h3>
         <p className="mt-1 text-sm text-gray-500">
           Please connect your wallet to view your evermarks.
@@ -135,7 +135,7 @@ const MyEvermarksPage: React.FC = () => {
         </div>
       ) : sortedEvermarks.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <EmptyCircleIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <CircleIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900">No evermarks yet</h3>
           <p className="mt-2 text-sm text-gray-600">
             Start preserving your favorite content by creating your first evermark.

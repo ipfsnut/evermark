@@ -1,4 +1,4 @@
-import { ContentType } from '../../types/evermark';
+import { ContentType } from '../../types/evermark.types';
 
 class MetadataService {
   // Detect content type from a source
