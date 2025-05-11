@@ -1,224 +1,188 @@
-# Evermark Development - Revised Todo List
+# Evermark Development - Updated Todo (Blockchain Integration Complete)
 
-## 🚨 CRITICAL FIXES (Do First)
+## ✅ COMPLETED
 
-### 1. Complete Type Definitions
+### Blockchain Integration
+- [x] Translation Service: Maps Evermark ↔ Bookmark terminology
+- [x] Blockchain Contracts Service: All 6 contracts integrated
+- [x] IPFS Service: Metadata storage with Pinata
+- [x] Create Evermark Flow: IPFS → NFT → Database
+- [x] Fetch Evermark Flow: Blockchain first, database as cache
+- [x] Complete Evermark Service: Unified API
+
+### Architecture
+- [x] Hybrid approach implemented (Blockchain + Database)
+- [x] Graceful degradation for IPFS/Supabase failures
+- [x] Contract ABIs and addresses configured
+
+## 🚨 CRITICAL ISSUES (Current Priority)
+
+### 1. Hook Integration Issues
 ```typescript
-// src/types/evermark.types.ts - COMPLETE THE FILE
-- ✅ Evermark interface exists
-- ✅ EvermarkMetadata interface exists
-- ❌ Missing ContentType enum
-- ❌ Missing CreateEvermarkInput interface
-- ❌ Missing EvermarkFormData interface
-- ❌ Missing response types (EvermarkResponse, etc.)
-
-// Specific issues to fix:
-- Add ContentType enum with all values
-- Add CreateEvermarkInput interface
-- Add EvermarkFormData interface
-- Fix type inconsistencies (fid: string vs number)
+// src/hooks/useEvermarks.ts needs fixing:
+- createEvermark expects different signature than service provides
+- list() method signature mismatch
+- Error handling needs improvement
 ```
 
-### 2. Fix Authentication Service
+### 2. Service Layer Misalignment
 ```typescript
-// src/services/auth/index.ts - CONSOLIDATE & FIX
-Issues:
-- Functions scattered across multiple files
-- Missing proper exports for authService object
-- useAuth hook expects userService which doesn't exist properly
-- Auth service needs to handle sessions properly
-
-Actions:
-1. Consolidate all auth functions into one file
-2. Create authService object export
-3. Create userService or fix references
-4. Fix session storage implementation
+// src/services/evermark/* needs alignment:
+- Ensure all methods return consistent data structures
+- Fix TokenId extraction from transaction receipts
+- Handle edge cases (missing metadata, failed DB saves)
 ```
 
-### 3. Complete Evermark Services
+### 3. Type Inconsistencies
 ```typescript
-// src/services/evermark/ - FIX API MISMATCHES
-Issues:
-- create.ts references old blockchain-first approach
-- useEvermarks expects wallet address instead of userId
-- Service methods don't match database schema
-- Missing proper error handling
-
-Actions:
-1. Update create.ts to use database-first approach
-2. Align service methods with database schema
-3. Fix useEvermarks to use userId from auth
-4. Update method signatures to match actual usage
+// Need to fix:
+- userService import issues in useAuth
+- fid type inconsistency (string vs number)
+- CreateEvermarkInput interface usage
 ```
 
-### 4. Create Missing Components
-```typescript
-// src/components/ - CREATE ESSENTIAL COMPONENTS
-Missing:
-- CreateEvermark.tsx (referenced but not created)
-- EvermarkDetail.tsx (for detailed view)
-- Simple error boundaries
-- Loading states
+## 📋 NEXT PHASE: TESTING & INTEGRATION
 
-Actions:
-1. Create CreateEvermark component
-2. Update EvermarkList to work with new data structure
-3. Add error boundary components
-4. Create loading state components
+### Week 1: Core Functionality
+1. **Test End-to-End Flow**
+   - [ ] Create test Evermark through UI
+   - [ ] Verify blockchain transaction
+   - [ ] Check IPFS metadata upload
+   - [ ] Confirm database caching
+   - [ ] Test graceful failures
+
+2. **Fix Integration Issues**
+   - [ ] Update useEvermarks hook signatures
+   - [ ] Fix userService import/export
+   - [ ] Align all service method signatures
+   - [ ] Add comprehensive error handling
+
+3. **Performance Optimization**
+   - [ ] Implement proper TokenId extraction from receipts
+   - [ ] Add more aggressive caching
+   - [ ] Optimize IPFS fetching
+
+### Week 2: Extended Features
+1. **Voting System**
+   - [ ] Implement vote delegation UI
+   - [ ] Add vote display components
+   - [ ] Test voting flow
+
+2. **Wallet Integration**
+   - [ ] Test staking/unstaking flows
+   - [ ] Add proper balance displays
+   - [ ] Implement unbonding requests
+
+3. **Search & Discovery**
+   - [ ] Test search functionality
+   - [ ] Implement filters
+   - [ ] Add pagination
+
+## 🔧 SPECIFIC FILES TO UPDATE
+
+### Priority 1: Hook Alignment
+```bash
+src/hooks/useEvermarks.ts     # Fix createEvermark signature
+src/hooks/useAuth.ts          # Fix userService import
+src/services/auth.service.ts  # Ensure proper exports
 ```
 
-## 📋 NEXT PRIORITY (After Critical Fixes)
-
-### 5. Update Contract Integration
-```typescript
-// Current Issue: Inconsistent blockchain integration
-- Contract ABIs referenced but not present
-- Some services expect blockchain methods that may not exist
-- Blockchain integration is optional but poorly handled
-
-Actions:
-1. Decide: Database-first or Blockchain-first approach?
-2. Update services to reflect the chosen approach
-3. Make blockchain features optional/supplementary
-4. Fix contract service method expectations
+### Priority 2: Error Handling
+```bash
+src/services/evermark/create.ts   # Better TokenId extraction
+src/services/blockchain/contracts.ts # Enhanced error messages
+src/components/CreateEvermark.tsx # Better error display
 ```
 
-### 6. Environment Setup
-```typescript
-// .env setup and constants
-Current issues:
-- Missing environment variable definitions
-- Contract addresses need to be updated
-- IPFS configuration may be optional now
-
-Actions:
-1. Create .env.example with all required variables
-2. Update constants.ts to handle missing env vars gracefully
-3. Document which services require which env vars
+### Priority 3: Missing Features
+```bash
+src/components/VoteEvermark.tsx   # New component
+src/components/StakeTokens.tsx    # New component
+src/services/evermark/vote.ts     # New service
 ```
 
-### 7. API Endpoints
-```typescript
-// Backend/Netlify Functions
-Current gaps:
-- Auth endpoint referenced but not shown
-- Metadata extraction endpoint may be needed
-- User profile endpoint needed
+## 🐛 KNOWN ISSUES TO FIX
 
-Actions:
-1. Document which Netlify functions are required
-2. Create minimal function stubs
-3. Update service calls to match actual endpoints
+### 1. TokenId Extraction
+```typescript
+// In create.ts: Parse transaction receipt properly
+const tokenId = await extractTokenIdFromReceipt(receipt);
 ```
 
-## 🛠 SPECIFIC FILES TO FIX
-
-### Priority 1 Files:
-1. **src/types/evermark.types.ts** - Complete all missing types
-2. **src/services/auth/index.ts** - Consolidate and fix exports
-3. **src/services/evermark/create.ts** - Fix database approach
-4. **src/services/evermark/index.ts** - Fix method signatures
-
-### Priority 2 Files:
-1. **src/hooks/useAuth.ts** - Fix userService dependency
-2. **src/hooks/useEvermarks.ts** - Update to use userId
-3. **src/services/storage/index.ts** - Fix method signatures
-4. **src/components/CreateEvermark.tsx** - Create component
-
-## 📊 SUGGESTED IMPLEMENTATION ORDER
-
-### Week 1: Foundation Fix
-1. Complete type definitions
-2. Fix authentication service
-3. Update evermark services to match database
-
-### Week 2: Component Creation
-1. Create CreateEvermark component
-2. Fix EvermarkList component
-3. Add error boundaries
-4. Test creation flow
-
-### Week 3: Integration
-1. Fix blockchain integration (if needed)
-2. Set up environment variables
-3. Create minimal Netlify functions
-4. Test end-to-end flow
-
-## 🔧 QUICK FIXES TO START
-
-### 1. Fix Evermark Types
+### 2. IPFS Fallback
 ```typescript
-// Add to src/types/evermark.types.ts
-export enum ContentType {
-  BOOK = 'book',
-  ARTICLE = 'article',
-  WEBSITE = 'website',
-  VIDEO = 'video',
-  AUDIO = 'audio',
-  DOCUMENT = 'document',
-  OTHER = 'other'
-}
-
-export interface CreateEvermarkInput {
-  contentType: ContentType;
-  sourceUrl?: string;
-  manualData?: Partial<EvermarkMetadata>;
+// Add database fallback when IPFS is down
+if (!ipfsService.isAvailable()) {
+  await saveMetadataToDatabase(metadata);
 }
 ```
 
-### 2. Fix Auth Service Export
+### 3. Contract Event Parsing
 ```typescript
-// Add to src/services/auth/index.ts at the bottom
-export const authService = {
-  generateNonce,
-  generateSessionToken,
-  createSession,
-  validateSession,
-  deleteSession,
-  storeSession,
-  getSessionToken,
-  clearSession,
-};
+// Use ethers.js to properly parse events
+const interface = new ethers.Interface(BookmarkNFTABI);
+const parsedLog = interface.parseLog(log);
 ```
 
-### 3. Fix Storage Service Method
-```typescript
-// Update src/services/storage/index.ts
-// Change saveEvermarkData signature to match database
-async saveEvermarkData(metadata: any, userId: string, ownerAddress?: string)
-```
+## 🚀 IMMEDIATE ACTION ITEMS
 
-## 🎯 KEY DECISIONS NEEDED
+### Today
+1. **Test Create Flow**
+   - Run through UI creation
+   - Check transaction on Basescan
+   - Verify IPFS upload
 
-1. **Database vs Blockchain First?**
-   - Current code mixes both approaches
-   - Recommend: Database-first with optional blockchain
+2. **Fix Hook Signatures**
+   - Update useEvermarks.createEvermark
+   - Align service method returns
+   - Add proper TypeScript types
 
-2. **Authentication Backend?**
-   - Using Netlify functions?
-   - Need to create auth endpoint
+### Next 3 Days
+1. **Complete Integration Testing**
+2. **Fix all import/export issues**
+3. **Add comprehensive error states**
+4. **Implement vote delegation**
 
-3. **Metadata Storage?**
-   - IPFS for large data?
-   - Database for everything?
+## 📈 SUCCESS METRICS
 
-4. **NFT Minting?**
-   - Optional feature?
-   - Required feature?
-
-## 📈 PROGRESS TRACKING
-
-- [ ] Complete type definitions
-- [ ] Fix authentication service
-- [ ] Update evermark services
-- [ ] Create missing components
-- [ ] Fix blockchain integration
-- [ ] Set up environment
-- [ ] Create API endpoints
-- [ ] Test end-to-end flow
+- ✅ Create Evermark works end-to-end
+- ✅ Data displays correctly from blockchain
+- ✅ IPFS metadata accessible
+- ✅ Vote delegation functional
+- ✅ No TypeScript errors
+- ✅ Graceful failure handling
 
 ---
 
-## 🚀 NEXT IMMEDIATE ACTION
+## 🔄 AFTER TESTING
 
-Start with completing `src/types/evermark.types.ts` - this will fix many downstream issues and clarify the data model for the entire application.
+### Future Enhancements
+1. Auction system integration
+2. Leaderboard displays
+3. Rewards claiming interface
+4. Batch operations
+5. Advanced search features
+
+### Contract Redeployment (Later)
+1. Update contracts with Evermark naming
+2. Remove translation layer
+3. Update constants with new addresses
+4. Full testing on testnet
+5. Mainnet deployment
+
+## 🎯 CURRENT FOCUS
+
+**PRIMARY GOAL**: Get the create → display → vote flow working smoothly with proper error handling and TypeScript types.
+
+**TESTS TO RUN**:
+1. Create Evermark with valid data
+2. Create Evermark with missing fields
+3. Create Evermark when IPFS is down
+4. Create Evermark when Supabase is down
+5. Fetch existing Evermarks
+6. Vote on Evermarks
+
+**BLOCKERS TO RESOLVE**:
+1. Hook signature mismatches
+2. TokenId extraction from receipts
+3. Service import/export issues

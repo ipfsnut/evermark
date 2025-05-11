@@ -10,11 +10,11 @@ import {
   
   // Import the ABIs (need to be copied from bookmarks and renamed)
   import CardCatalogABI from '../config/abis/CardCatalog.json';
-  import EvermarkNFTABI from '../config/abis/EvermarkNFT.json'; // Renamed from BookmarkNFT
-  import EvermarkVotingABI from '../config/abis/EvermarkVoting.json'; // Renamed from BookmarkVoting
-  import EvermarkLeaderboardABI from '../config/abis/EvermarkLeaderboard.json'; // Renamed from BookmarkLeaderboard
-  import EvermarkRewardsABI from '../config/abis/EvermarkRewards.json'; // Renamed from BookmarkRewards
-  import EvermarkAuctionABI from '../config/abis/EvermarkAuction.json'; // Renamed from BookmarkAuction
+  import EvermarkNFTABI from '../config/abis/BookmarkNFT.json'; // Renamed from BookmarkNFT
+  import EvermarkVotingABI from '../config/abis/BookmarkVoting.json'; // Renamed from BookmarkVoting
+  import EvermarkLeaderboardABI from '../config/abis/BookmarkLeaderboard.json'; // Renamed from BookmarkLeaderboard
+  import EvermarkRewardsABI from '../config/abis/BookmarkRewards.json'; // Renamed from BookmarkRewards
+  import EvermarkAuctionABI from '../config/abis/BookmarkAuction.json'; // Renamed from BookmarkAuction
   
   // Re-export the contract service functions
   export { 
