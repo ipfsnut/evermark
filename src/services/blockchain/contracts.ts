@@ -1,6 +1,6 @@
 // src/services/blockchain/contracts.ts
-import { ethers, Contract, JsonRpcProvider, BrowserProvider } from 'ethers';
-import { CONTRACT_ADDRESSES } from '../../config/constants';
+import { ethers, Contract, JsonRpcProvider, BrowserProvider, ContractRunner } from 'ethers';
+import { CONTRACT_ADDRESSES, API_CONFIG } from '../../config/constants';
 import { translationService } from './translation';
 
 // Import the correct ABIs
@@ -17,15 +17,15 @@ class ContractService {
   private cache: Map<string, { value: any; timestamp: number }> = new Map();
   
   constructor() {
-    this.provider = new JsonRpcProvider('https://mainnet.base.org');
+    this.provider = new JsonRpcProvider(API_CONFIG.RPC_URL);
   }
   
   // Get contract instance
-  private getContract(address: string, abi: any[]): Contract {
-    const key = address.toLowerCase();
+  private getContract(address: string, abi: any[], runner?: ContractRunner): Contract {
+    const key = `${address.toLowerCase()}_${runner ? 'signer' : 'provider'}`;
     
     if (!this.contracts.has(key)) {
-      const contract = new Contract(address, abi, this.provider);
+      const contract = new Contract(address, abi, runner || this.provider);
       this.contracts.set(key, contract);
     }
     
@@ -77,9 +77,30 @@ class ContractService {
     }
   }
   
+  // Add missing getNSIBalance method
+  async getNSIBalance(address: string): Promise<bigint> {
+    const nsiContract = this.getContract(
+      CONTRACT_ADDRESSES.NSI_TOKEN,
+      [
+        "function balanceOf(address) view returns (uint256)"
+      ]
+    );
+    
+    try {
+      return await this.callContract<bigint>(nsiContract, 'balanceOf', [address]);
+    } catch (error) {
+      throw new Error(`Failed to get NSI balance: ${error}`);
+    }
+  }
+  
   // Bookmark NFT methods (used as Evermark)
   async mintEvermark(to: string, metadataUri: string, title: string, author: string) {
     try {
+      // Check if window.ethereum exists
+      if (!window.ethereum) {
+        throw new Error('No wallet detected');
+      }
+      
       // Get signer from browser
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
@@ -87,12 +108,12 @@ class ContractService {
       // Get contract with signer
       const contract = this.getContract(
         CONTRACT_ADDRESSES.BOOKMARK_NFT,
-        BookmarkNFTABI
+        BookmarkNFTABI,
+        signer
       );
-      const contractWithSigner = contract.connect(signer);
       
       // Call mintBookmarkFor (using the actual method from BookmarkNFT)
-      const tx = await contractWithSigner.mintBookmarkFor(
+      const tx = await contract.mintBookmarkFor(
         to,
         metadataUri,
         title,
@@ -122,16 +143,15 @@ class ContractService {
         this.callContract<[string, string, string]>(contract, 'getBookmarkMetadata', [tokenId]).catch(() => null),
       ]);
       
-      const result = { exists, tokenURI, owner };
-      
-      if (bookmarkData) {
-        return {
-          ...result,
-          title: bookmarkData[0],
-          author: bookmarkData[1],
-          metadataURI: bookmarkData[2],
-        };
-      }
+      // Always return the same structure, but with some fields potentially null
+      const result = {
+        exists,
+        tokenURI,
+        owner,
+        title: bookmarkData ? bookmarkData[0] : null,
+        author: bookmarkData ? bookmarkData[1] : null,
+        metadataURI: bookmarkData ? bookmarkData[2] : null,
+      };
       
       return result;
     } catch (error) {
@@ -163,17 +183,22 @@ class ContractService {
   // Card Catalog methods for staking
   async wrapTokens(amount: string) {
     try {
+      // Check if window.ethereum exists
+      if (!window.ethereum) {
+        throw new Error('No wallet detected');
+      }
+      
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
       const contract = this.getContract(
         CONTRACT_ADDRESSES.CARD_CATALOG,
-        CardCatalogABI
+        CardCatalogABI,
+        signer
       );
-      const contractWithSigner = contract.connect(signer);
       
       const amountWei = ethers.parseEther(amount);
-      const tx = await contractWithSigner.wrap(amountWei);
+      const tx = await contract.wrap(amountWei);
       
       return {
         hash: tx.hash,
@@ -186,17 +211,22 @@ class ContractService {
   
   async requestUnwrap(amount: string) {
     try {
+      // Check if window.ethereum exists
+      if (!window.ethereum) {
+        throw new Error('No wallet detected');
+      }
+      
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
       const contract = this.getContract(
         CONTRACT_ADDRESSES.CARD_CATALOG,
-        CardCatalogABI
+        CardCatalogABI,
+        signer
       );
-      const contractWithSigner = contract.connect(signer);
       
       const amountWei = ethers.parseEther(amount);
-      const tx = await contractWithSigner.requestUnwrap(amountWei);
+      const tx = await contract.requestUnwrap(amountWei);
       
       return {
         hash: tx.hash,
@@ -209,16 +239,21 @@ class ContractService {
   
   async completeUnwrap(requestIndex: number) {
     try {
+      // Check if window.ethereum exists
+      if (!window.ethereum) {
+        throw new Error('No wallet detected');
+      }
+      
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
       const contract = this.getContract(
         CONTRACT_ADDRESSES.CARD_CATALOG,
-        CardCatalogABI
+        CardCatalogABI,
+        signer
       );
-      const contractWithSigner = contract.connect(signer);
       
-      const tx = await contractWithSigner.completeUnwrap(requestIndex);
+      const tx = await contract.completeUnwrap(requestIndex);
       
       return {
         hash: tx.hash,
@@ -284,20 +319,25 @@ class ContractService {
   // Voting methods
   async delegateVotes(evermarkId: string, amount: string) {
     try {
+      // Check if window.ethereum exists
+      if (!window.ethereum) {
+        throw new Error('No wallet detected');
+      }
+      
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
       const contract = this.getContract(
         CONTRACT_ADDRESSES.BOOKMARK_VOTING,
-        BookmarkVotingABI
+        BookmarkVotingABI,
+        signer
       );
-      const contractWithSigner = contract.connect(signer);
       
       // The voting contract expects bookmarkId, not evermarkId
       const voteData = translationService.prepareVotingData(evermarkId, amount);
       const amountWei = ethers.parseEther(amount);
       
-      const tx = await contractWithSigner.delegateVotes(voteData.bookmarkId, amountWei);
+      const tx = await contract.delegateVotes(voteData.bookmarkId, amountWei);
       
       return {
         hash: tx.hash,

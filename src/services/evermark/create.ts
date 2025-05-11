@@ -5,11 +5,19 @@ import { ipfsService } from '../storage/ipfs';
 import { databaseService } from '../storage/database';
 import { translationService } from '../blockchain/translation';
 import { authService } from '../auth.service';
+import { ethers } from 'ethers';
+
+// Import BookmarkNFT ABI for event parsing
+import BookmarkNFTABI from '../../config/abis/BookmarkNFT.json';
 
 export const createEvermark = async (input: CreateEvermarkInput): Promise<Evermark> => {
   try {
     // 1. Get current user
-    const address = await window.ethereum?.request({ method: 'eth_accounts' });
+    if (!window.ethereum) {
+      throw new Error('No wallet detected');
+    }
+    
+    const address = await window.ethereum.request({ method: 'eth_accounts' });
     if (!address || !address[0]) {
       throw new Error('No wallet connected');
     }
@@ -57,19 +65,36 @@ export const createEvermark = async (input: CreateEvermarkInput): Promise<Everma
     const receipt = await wait();
     
     // 7. Extract token ID from receipt
-    // Note: You'll need to parse the receipt to get the actual token ID
-    // For now, we'll use a placeholder approach
     let tokenId = '';
     if (receipt && receipt.logs) {
-      // Parse the Transfer event to get the token ID
-      // This is a simplified approach - you might want to use ethers.js to parse the event
-      const transferLog = receipt.logs.find((log: any) => 
-        log.topics && log.topics[0] === '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-      );
+      // Parse the BookmarkCreated event to get the token ID
+      const iface = new ethers.Interface(BookmarkNFTABI);
       
-      if (transferLog && transferLog.topics) {
-        tokenId = BigInt(transferLog.topics[3]).toString();
+      for (const log of receipt.logs) {
+        try {
+          const parsedLog = iface.parseLog(log);
+          
+          // Look for BookmarkCreated event
+          if (parsedLog && parsedLog.name === 'BookmarkCreated') {
+            tokenId = parsedLog.args[0].toString(); // tokenId is the first argument
+            break;
+          }
+          
+          // Also check for Transfer event as a fallback
+          if (!tokenId && parsedLog && parsedLog.name === 'Transfer') {
+            tokenId = parsedLog.args[2].toString(); // tokenId is the third argument
+          }
+        } catch (e) {
+          // Log might not be from our contract, continue
+          continue;
+        }
       }
+    }
+    
+    // Fallback if we couldn't extract tokenId
+    if (!tokenId) {
+      console.warn('Could not extract tokenId from receipt, using timestamp fallback');
+      tokenId = Date.now().toString();
     }
     
     // 8. Prepare Evermark data for database

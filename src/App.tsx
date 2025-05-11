@@ -1,6 +1,24 @@
 import { sdk } from "@farcaster/frame-sdk";
 import { useEffect } from "react";
-import { useAccount, useConnect, useSignMessage } from "wagmi";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { WagmiProvider } from "wagmi";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { config } from "./wagmi";
+import { Layout } from "./components/layout/Layout";
+import HomePage from "./pages/HomePage";
+import CreateEvermarkPage from "./pages/CreateEvermarkPage";
+import MyEvermarksPage from "./pages/MyEvermarksPage";
+import EvermarkDetailPage from "./pages/EvermarkDetailPage";
+import ProfilePage from "./pages/ProfilePage";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   useEffect(() => {
@@ -8,55 +26,21 @@ function App() {
   }, []);
 
   return (
-    <>
-      <div>Mini App + Vite + TS + React + Wagmi</div>
-      <ConnectMenu />
-    </>
-  );
-}
-
-function ConnectMenu() {
-  const { isConnected, address } = useAccount();
-  const { connect, connectors } = useConnect();
-
-  if (isConnected) {
-    return (
-      <>
-        <div>Connected account:</div>
-        <div>{address}</div>
-        <SignButton />
-      </>
-    );
-  }
-
-  return (
-    <button type="button" onClick={() => connect({ connector: connectors[0] })}>
-      Connect
-    </button>
-  );
-}
-
-function SignButton() {
-  const { signMessage, isPending, data, error } = useSignMessage();
-
-  return (
-    <>
-      <button type="button" onClick={() => signMessage({ message: "hello world" })} disabled={isPending}>
-        {isPending ? "Signing..." : "Sign message"}
-      </button>
-      {data && (
-        <>
-          <div>Signature</div>
-          <div>{data}</div>
-        </>
-      )}
-      {error && (
-        <>
-          <div>Error</div>
-          <div>{error.message}</div>
-        </>
-      )}
-    </>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/create" element={<CreateEvermarkPage />} />
+              <Route path="/my-evermarks" element={<MyEvermarksPage />} />
+              <Route path="/evermark/:id" element={<EvermarkDetailPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Routes>
+          </Layout>
+        </Router>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 

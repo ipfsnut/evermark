@@ -26,3 +26,6 @@ node_modules
 *.njsproj
 *.sln
 *.sw?
+
+# Local Netlify folder
+.netlify

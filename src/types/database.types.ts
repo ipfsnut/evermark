@@ -126,6 +126,23 @@ export interface Database {
           updated_at?: string
         }
       }
+      sync_status: {
+        Row: {
+          id: number
+          last_block: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          last_block?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          last_block?: number
+          updated_at?: string
+        }
+      }
       token_balances: {
         Row: {
           id: string
@@ -214,13 +231,17 @@ export interface Database {
     Enums: {
       [_ in never]: never
     }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
 
 // Helper types for cleaner usage
-export type DbEvermark = Database['public']['Tables']['evermarks']['Row'];
-export type DbUser = Database['public']['Tables']['users']['Row'];
-export type DbSession = Database['public']['Tables']['sessions']['Row'];
-export type DbStake = Database['public']['Tables']['stakes']['Row'];
-export type DbTokenBalance = Database['public']['Tables']['token_balances']['Row'];
-export type DbNotification = Database['public']['Tables']['notifications']['Row'];
+export type DbEvermark = Database['public']['Tables']['evermarks']['Row']
+export type DbUser = Database['public']['Tables']['users']['Row']
+export type DbSession = Database['public']['Tables']['sessions']['Row']
+export type DbStake = Database['public']['Tables']['stakes']['Row']
+export type DbTokenBalance = Database['public']['Tables']['token_balances']['Row']
+export type DbNotification = Database['public']['Tables']['notifications']['Row']
+export type DbSyncStatus = Database['public']['Tables']['sync_status']['Row']

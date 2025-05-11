@@ -46,21 +46,46 @@ export const CONTRACT_ADDRESSES = {
   EVERMARK_AUCTION: '0x8a927E063d32e46cDeDe59DeC7BbF3be06316449'
 };
 
-// IPFS Configuration
+// Function to get environment variables that works in both browser and Node.js
+function getEnvVar(key: string): string {
+  // Check if we're in a Node.js environment (Netlify functions)
+  if (typeof process !== 'undefined' && process.env) {
+    // Try both VITE_ prefixed and non-prefixed versions
+    return process.env[key] || process.env[`VITE_${key}`] || '';
+  }
+  
+  // In browser environment, use import.meta.env
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return (import.meta.env as any)[`VITE_${key}`] || '';
+  }
+  
+  return '';
+}
+
+// IPFS Configuration - uses environment variables for secrets only
 export const IPFS_CONFIG = {
-  PINATA_API_KEY: process.env.VITE_PINATA_API_KEY || import.meta.env.VITE_PINATA_API_KEY || '',
-  PINATA_SECRET_KEY: process.env.VITE_PINATA_SECRET_KEY || import.meta.env.VITE_PINATA_SECRET_KEY || '',
-  GATEWAY_URL: process.env.VITE_PINATA_GATEWAY || import.meta.env.VITE_PINATA_GATEWAY || 'https://gateway.pinata.cloud',
+  PINATA_API_KEY: getEnvVar('PINATA_API_KEY'),
+  PINATA_SECRET_KEY: getEnvVar('PINATA_SECRET_KEY'),
+  GATEWAY_URL: 'https://gateway.pinata.cloud', // Public gateway URL
 };
 
-// API Configuration
+// API Configuration - uses environment variables for secrets only
 export const API_CONFIG = {
-  RPC_URL: process.env.VITE_RPC_URL || import.meta.env.VITE_RPC_URL || 'https://mainnet.base.org',
-  SUPABASE_URL: process.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || '',
-  SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+  RPC_URL: 'https://mainnet.base.org', // Public RPC URL
+  SUPABASE_URL: getEnvVar('SUPABASE_URL'),
+  SUPABASE_ANON_KEY: getEnvVar('SUPABASE_ANON_KEY'),
 };
 
 // Legacy constant for compatibility
 export const CONTRACT_CONSTANTS = {
-  EVERMARK_CONTRACT_ADDRESS: import.meta.env.VITE_EVERMARK_CONTRACT_ADDRESS || CONTRACT_ADDRESSES.BOOKMARK_NFT
+  EVERMARK_CONTRACT_ADDRESS: CONTRACT_ADDRESSES.BOOKMARK_NFT
 };
+
+// Add this check to ensure required env vars are present
+if (!API_CONFIG.SUPABASE_URL || !API_CONFIG.SUPABASE_ANON_KEY) {
+  console.warn('Missing Supabase environment variables - database features may not work');
+}
+
+if (!IPFS_CONFIG.PINATA_API_KEY || !IPFS_CONFIG.PINATA_SECRET_KEY) {
+  console.warn('Missing Pinata environment variables - IPFS features may not work');
+}

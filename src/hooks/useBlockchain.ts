@@ -69,14 +69,21 @@ export function useBlockchain(): UseBlockchainReturn {
         stakedBalance,
         votingPower,
         availableVotingPower,
-        unbondingRequests,
       ] = await Promise.all([
         contractService.getNSIBalance(address),
         contractService.getStakedBalance(address),
         contractService.getVotingPower(address),
         contractService.getAvailableVotingPower(address),
-        contractService.getUnbondingRequests ? contractService.getUnbondingRequests(address) : Promise.resolve([]),
       ]);
+      
+      // Fetch unbonding requests separately since it might not exist yet
+      let unbondingRequests: any[] = [];
+      try {
+        unbondingRequests = await contractService.getUnbondingRequests(address);
+      } catch (error) {
+        console.warn('getUnbondingRequests not available or failed:', error);
+        unbondingRequests = [];
+      }
       
       // Calculate locked amount
       const lockedAmount = unbondingRequests.reduce((sum, req) => sum + req.amount, BigInt(0));
