@@ -1,7 +1,7 @@
 export interface User {
     id: string;
     walletAddress: string;
-    fid?: string;
+    fid?: number; // Fixed: should be number to match database schema
     username?: string;
     createdAt: string;
     updatedAt: string;
@@ -33,7 +33,7 @@ export interface User {
   export interface TokenTransaction {
     id: string;
     userId: string;
-    amount: bigint;
+    amount: number; // Fixed: database stores as number, not bigint
     type: 'credit' | 'debit';
     reason: string;
     createdAt: string;
