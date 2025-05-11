@@ -1,3 +1,4 @@
+// src/services/blockchain/translation.ts
 import { EvermarkMetadata, ContentType } from '../../types/evermark.types';
 
 interface BookmarkContractData {
@@ -15,30 +16,37 @@ interface ContractEvermarkData {
   createdAt: number;
 }
 
+// Define valid method names as a union type
+type EvermarkMethodName = 'createEvermark' | 'fetchEvermark' | 'updateEvermark' | 'getUserEvermarks';
+
+// Define valid field names as union types
+type EvermarkFieldName = 'author' | 'userId' | 'createdAt';
+type ContractFieldName = 'contentCreator' | 'creator' | 'creationTime';
+
 class ContractTranslationService {
-  // Field mappings for display names to contract names
+  // Field mappings with proper types
   private readonly FIELD_MAPPINGS = {
     // Display → Contract
     toContract: {
       author: 'contentCreator',
       userId: 'creator',
       createdAt: 'creationTime',
-    },
+    } as const,
     // Contract → Display
     fromContract: {
       contentCreator: 'author',
       creator: 'userId',
       creationTime: 'createdAt',
-    }
+    } as const
   };
 
-  // Method name mappings
+  // Method name mappings with proper types
   private readonly METHOD_MAPPINGS = {
     createEvermark: 'mintBookmark',
     fetchEvermark: 'getBookmark',
     updateEvermark: 'updateBookmark',
     getUserEvermarks: 'getUserBookmarks',
-  };
+  } as const;
 
   /**
    * Prepare metadata for contract interaction
@@ -80,7 +88,7 @@ class ContractTranslationService {
   /**
    * Translate contract response to Evermark format
    */
-  translateFromContract(contractData: ContractEvermarkData, metadata?: EvermarkMetadata): any {
+  translateFromContract(contractData: ContractEvermarkData, metadata?: EvermarkMetadata | null): any {
     const baseEvermark = {
       id: contractData.tokenId,
       title: contractData.title,
@@ -102,35 +110,38 @@ class ContractTranslationService {
     }
 
     // Otherwise, create minimal metadata structure
+    const defaultMetadata: EvermarkMetadata = {
+      type: ContentType.WEBSITE,
+      title: baseEvermark.title,
+      author: baseEvermark.author,
+      external_url: '',
+      // Add any required fields from EvermarkMetadata
+    };
+
     return {
       ...baseEvermark,
-      metadata: {
-        type: metadata?.type || ContentType.WEBSITE,
-        title: baseEvermark.title,
-        author: baseEvermark.author,
-        external_url: metadata?.external_url || '',
-      },
+      metadata: defaultMetadata,
     };
   }
 
   /**
    * Get the contract method name for an Evermark operation
    */
-  getContractMethod(evermarkMethod: string): string {
+  getContractMethod(evermarkMethod: EvermarkMethodName): string {
     return this.METHOD_MAPPINGS[evermarkMethod] || evermarkMethod;
   }
 
   /**
    * Translate field names for contract calls
    */
-  translateFieldToContract(field: string): string {
+  translateFieldToContract(field: EvermarkFieldName): ContractFieldName | string {
     return this.FIELD_MAPPINGS.toContract[field] || field;
   }
 
   /**
    * Translate field names from contract responses
    */
-  translateFieldFromContract(field: string): string {
+  translateFieldFromContract(field: ContractFieldName): EvermarkFieldName | string {
     return this.FIELD_MAPPINGS.fromContract[field] || field;
   }
 

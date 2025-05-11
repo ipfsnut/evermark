@@ -1,7 +1,8 @@
+// src/hooks/useEvermarks.ts
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { evermarkService } from '../services/evermark';
-import { Evermark, CreateEvermarkInput, ContentType } from '../types';
+import { Evermark, CreateEvermarkInput } from '../types/evermark.types';
 
 interface EvermarksState {
   evermarks: Evermark[];
@@ -18,6 +19,7 @@ interface UseEvermarksReturn extends EvermarksState {
   fetchUserEvermarks: () => Promise<void>;
   selectEvermark: (evermark: Evermark | null) => void;
   refreshEvermarks: () => Promise<void>;
+  searchEvermarks: (query: string) => Promise<Evermark[]>;
 }
 
 export function useEvermarks(): UseEvermarksReturn {
@@ -68,7 +70,7 @@ export function useEvermarks(): UseEvermarksReturn {
     }
   }, []);
 
-  // Fetch a single evermark by token ID
+  // Fetch a single evermark by token ID (renamed from fetch to align with hook)
   const fetchEvermark = useCallback(async (tokenId: string): Promise<Evermark | null> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
@@ -87,6 +89,8 @@ export function useEvermarks(): UseEvermarksReturn {
             loading: false,
           };
         });
+      } else {
+        setState(prev => ({ ...prev, loading: false }));
       }
       
       return evermark;
@@ -157,6 +161,16 @@ export function useEvermarks(): UseEvermarksReturn {
     }
   }, [address]);
 
+  // Search evermarks
+  const searchEvermarks = useCallback(async (query: string): Promise<Evermark[]> => {
+    try {
+      return await evermarkService.search(query);
+    } catch (error: any) {
+      console.error('Search failed:', error);
+      throw error;
+    }
+  }, []);
+
   return {
     ...state,
     createEvermark,
@@ -164,5 +178,6 @@ export function useEvermarks(): UseEvermarksReturn {
     fetchUserEvermarks,
     selectEvermark,
     refreshEvermarks,
+    searchEvermarks,
   };
 }

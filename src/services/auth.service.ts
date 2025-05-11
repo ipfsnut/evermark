@@ -1,8 +1,10 @@
+// src/services/auth.service.ts
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../config/supabase';
 import { AUTH_CONSTANTS } from '../config/constants';
 import { BrowserProvider } from 'ethers';
 
+// Auth Service Implementation
 class AuthService {
   /**
    * Generate a random nonce for wallet signature verification
@@ -177,9 +179,7 @@ class AuthService {
   }
 }
 
-export const authService = new AuthService();
-
-// User Service for profile management
+// User Service Implementation
 class UserService {
   async getUserProfile(): Promise<any> {
     try {
@@ -226,6 +226,41 @@ class UserService {
       throw error;
     }
   }
+
+  async updateUserProfile(updates: Partial<{
+    username: string;
+    fid: number;
+    [key: string]: any;
+  }>) {
+    try {
+      const token = authService.getSessionToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const { valid, userId } = await authService.validateSession(token);
+      if (!valid || !userId) throw new Error('Invalid session');
+
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Failed to update user profile:', error);
+      throw error;
+    }
+  }
 }
 
+// Create singleton instances
+export const authService = new AuthService();
 export const userService = new UserService();
+
+// Export the classes for cases where you need the actual class
+export { AuthService, UserService };

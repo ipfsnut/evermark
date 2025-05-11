@@ -1,8 +1,8 @@
+// src/hooks/useAuth.ts
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount, useSignMessage, useDisconnect } from 'wagmi';
-import { AuthState, User, Session } from '../types';
-import { authService } from '../services/auth';
-import { userService } from '../services/user.service';
+import { AuthState, User, Session } from '../types/user.types';
+import { authService, userService } from '../services/auth.service';
 
 export function useAuth() {
   const { address, isConnected } = useAccount();
@@ -89,15 +89,21 @@ export function useAuth() {
 
       if (!response.ok) throw new Error('Authentication failed');
       
-      const { token, user } = await response.json();
+      const { token, userId } = await response.json();
       
       // Store session
       authService.storeSession(token);
       
+      // Get user profile
+      const user = await userService.getUserProfile();
+      if (!user) {
+        throw new Error('Failed to fetch user profile');
+      }
+      
       setAuthState(prev => ({
         ...prev,
         user,
-        session: { token, userId: user.id, walletAddress: address, expiresAt: '' },
+        session: { token, userId, walletAddress: address, expiresAt: '' },
         isLoading: false,
       }));
       

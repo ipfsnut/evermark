@@ -1,127 +1,329 @@
-import { 
-    contractService, 
-    formatBigInt, 
-    parseToBigInt, 
-    useBalances,
-    useContractService,
-    contractEvents
-  } from '../services/contract.service';
-  import { CONTRACT_ADDRESSES } from '../config/constants';
+// src/services/blockchain/contracts.ts
+import { ethers, Contract, JsonRpcProvider, BrowserProvider } from 'ethers';
+import { CONTRACT_ADDRESSES } from '../config/constants';
+import { translationService } from '../services/blockchain/translation';
+
+// Import the correct ABIs
+import CardCatalogABI from '../../config/abis/CardCatalog.json';
+import BookmarkNFTABI from '../../config/abis/BookmarkNFT.json';
+import BookmarkVotingABI from '../../config/abis/BookmarkVoting.json';
+import BookmarkRewardsABI from '../../config/abis/BookmarkRewards.json';
+import BookmarkLeaderboardABI from '../../config/abis/BookmarkLeaderboard.json';
+import BookmarkAuctionABI from '../../config/abis/BookmarkAuction.json';
+
+class ContractService {
+  private provider: JsonRpcProvider;
+  private contracts: Map<string, Contract> = new Map();
+  private cache: Map<string, { value: any; timestamp: number }> = new Map();
   
-  // Import the ABIs (need to be copied from bookmarks and renamed)
-  import CardCatalogABI from '../config/abis/CardCatalog.json';
-  import EvermarkNFTABI from '../config/abis/BookmarkNFT.json'; // Renamed from BookmarkNFT
-  import EvermarkVotingABI from '../config/abis/BookmarkVoting.json'; // Renamed from BookmarkVoting
-  import EvermarkLeaderboardABI from '../config/abis/BookmarkLeaderboard.json'; // Renamed from BookmarkLeaderboard
-  import EvermarkRewardsABI from '../config/abis/BookmarkRewards.json'; // Renamed from BookmarkRewards
-  import EvermarkAuctionABI from '../config/abis/BookmarkAuction.json'; // Renamed from BookmarkAuction
-  
-  // Re-export the contract service functions
-  export { 
-    formatBigInt, 
-    parseToBigInt, 
-    contractEvents,
-    contractService
-  };
-  
-  // Helper function to clear contract call cache
-  export function clearContractCallCache(methodPattern?: string): void {
-    contractService.clearCache(methodPattern);
+  constructor() {
+    this.provider = new JsonRpcProvider('https://mainnet.base.org');
   }
   
-  // Cached contract call function
-  export async function cachedContractCall<T>(
-    contract: any,
-    method: string,
-    args: any[] = [],
-    fallbackValue?: T
-  ): Promise<T> {
-    return contractService.callContract(contract, method, args, fallbackValue);
-  }
-  
-  // Safe contract call function
-  export async function safeContractCall<T>(
-    contract: any,
-    method: string,
-    args: any[] = [],
-    fallbackValue: T
-  ): Promise<T> {
-    return contractService.callContract(contract, method, args, fallbackValue);
-  }
-  
-  // Hook to use the NSI Token contract (ERC20)
-  export function useNSIToken() {
-    return contractService.getContract(CONTRACT_ADDRESSES.NSI_TOKEN, [
-      "function balanceOf(address owner) view returns (uint256)",
-      "function decimals() view returns (uint8)",
-      "function symbol() view returns (string)",
-      "function transfer(address to, uint amount) returns (bool)",
-      "function allowance(address owner, address spender) view returns (uint256)",
-      "function approve(address spender, uint256 amount) returns (bool)"
-    ]);
-  }
-  
-  // Hook to use the CardCatalog contract
-  export function useCardCatalog() {
-    return contractService.getContract(CONTRACT_ADDRESSES.CARD_CATALOG, CardCatalogABI);
-  }
-  
-  // Hook to use the EvermarkNFT contract
-  export function useEvermarkNFT() {
-    return contractService.getContract(CONTRACT_ADDRESSES.EVERMARK_NFT, EvermarkNFTABI);
-  }
-  
-  // Hook to use the EvermarkVoting contract
-  export function useEvermarkVoting() {
-    return contractService.getContract(CONTRACT_ADDRESSES.EVERMARK_VOTING, EvermarkVotingABI);
-  }
-  
-  // Hook to use the EvermarkLeaderboard contract
-  export function useEvermarkLeaderboard() {
-    return contractService.getContract(CONTRACT_ADDRESSES.EVERMARK_LEADERBOARD, EvermarkLeaderboardABI);
-  }
-  
-  // Hook to use the EvermarkRewards contract
-  export function useEvermarkRewards() {
-    return contractService.getContract(CONTRACT_ADDRESSES.EVERMARK_REWARDS, EvermarkRewardsABI);
-  }
-  
-  // Hook to use the EvermarkAuction contract
-  export function useEvermarkAuction() {
-    return contractService.getContract(CONTRACT_ADDRESSES.EVERMARK_AUCTION, EvermarkAuctionABI);
-  }
-  
-  // Convenience hook to get all contracts
-  export function useAllContracts() {
-    const nsiToken = useNSIToken();
-    const cardCatalog = useCardCatalog();
-    const evermarkNFT = useEvermarkNFT();
-    const evermarkVoting = useEvermarkVoting();
-    const evermarkLeaderboard = useEvermarkLeaderboard();
-    const evermarkRewards = useEvermarkRewards();
-    const evermarkAuction = useEvermarkAuction();
-  
-    return {
-      nsiToken,
-      cardCatalog,
-      evermarkNFT,
-      evermarkVoting,
-      evermarkLeaderboard,
-      evermarkRewards,
-      evermarkAuction,
-    };
-  }
-  
-  // Hook to safely get balances from CardCatalog with better error handling
-  export function useSafeCardCatalogBalances() {
-    // Use our new useBalances hook
-    const { nsiBalance, wNsiBalance, votingPower, isLoading, error, fetchBalances } = useBalances();
+  // Get contract instance
+  private getContract(address: string, abi: any[]): Contract {
+    const key = address.toLowerCase();
     
-    return {
-      wNsiBalance,
-      votingPower,
-      isLoading,
-      error,
-      fetchBalances
-    };
+    if (!this.contracts.has(key)) {
+      const contract = new Contract(address, abi, this.provider);
+      this.contracts.set(key, contract);
+    }
+    
+    return this.contracts.get(key)!;
   }
+  
+  // Call contract method with caching
+  async callContract<T>(
+    contract: Contract,
+    method: string,
+    args: any[] = [],
+    options: { cache?: boolean; cacheTime?: number } = {}
+  ): Promise<T> {
+    const { cache = true, cacheTime = 30000 } = options;
+    const cacheKey = `${contract.target}_${method}_${JSON.stringify(args)}`;
+    
+    // Check cache
+    if (cache) {
+      const cached = this.cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < cacheTime) {
+        return cached.value;
+      }
+    }
+    
+    try {
+      const result = await contract[method](...args);
+      
+      // Cache result
+      if (cache) {
+        this.cache.set(cacheKey, { value: result, timestamp: Date.now() });
+      }
+      
+      return result;
+    } catch (error: any) {
+      throw new Error(`Contract call failed: ${error.message}`);
+    }
+  }
+  
+  // Clear cache
+  clearCache(pattern?: string) {
+    if (pattern) {
+      for (const key of this.cache.keys()) {
+        if (key.includes(pattern)) {
+          this.cache.delete(key);
+        }
+      }
+    } else {
+      this.cache.clear();
+    }
+  }
+  
+  // Bookmark NFT methods (used as Evermark)
+  async mintEvermark(to: string, metadataUri: string, title: string, author: string) {
+    try {
+      // Get signer from browser
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      // Get contract with signer
+      const contract = this.getContract(
+        CONTRACT_ADDRESSES.BOOKMARK_NFT,
+        BookmarkNFTABI
+      );
+      const contractWithSigner = contract.connect(signer);
+      
+      // Call mintBookmarkFor (using the actual method from BookmarkNFT)
+      const tx = await contractWithSigner.mintBookmarkFor(
+        to,
+        metadataUri,
+        title,
+        author // This is "contentCreator" in the contract
+      );
+      
+      return {
+        hash: tx.hash,
+        wait: () => tx.wait(),
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to mint evermark: ${error.message}`);
+    }
+  }
+  
+  async getEvermark(tokenId: string) {
+    const contract = this.getContract(
+      CONTRACT_ADDRESSES.BOOKMARK_NFT,
+      BookmarkNFTABI
+    );
+    
+    try {
+      const [exists, tokenURI, owner, bookmarkData] = await Promise.all([
+        this.callContract<boolean>(contract, 'exists', [tokenId]),
+        this.callContract<string>(contract, 'tokenURI', [tokenId]),
+        this.callContract<string>(contract, 'ownerOf', [tokenId]).catch(() => null),
+        this.callContract<[string, string, string]>(contract, 'getBookmarkMetadata', [tokenId]).catch(() => null),
+      ]);
+      
+      const result = { exists, tokenURI, owner };
+      
+      if (bookmarkData) {
+        return {
+          ...result,
+          title: bookmarkData[0],
+          author: bookmarkData[1],
+          metadataURI: bookmarkData[2],
+        };
+      }
+      
+      return result;
+    } catch (error) {
+      throw new Error(`Failed to get evermark: ${error}`);
+    }
+  }
+  
+  async getUserEvermarks(address: string): Promise<string[]> {
+    const contract = this.getContract(
+      CONTRACT_ADDRESSES.BOOKMARK_NFT,
+      BookmarkNFTABI
+    );
+    
+    try {
+      // Get all tokens owned by the user
+      const balance = await this.callContract<bigint>(contract, 'balanceOf', [address]);
+      const tokenIds: string[] = [];
+      
+      // Note: BookmarkNFT doesn't have a tokensOfOwner method
+      // We need to implement a different approach or use events
+      
+      // For now, return empty array and rely on database/events
+      return tokenIds;
+    } catch (error) {
+      throw new Error(`Failed to get user evermarks: ${error}`);
+    }
+  }
+  
+  // Card Catalog methods for staking
+  async wrapTokens(amount: string) {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const contract = this.getContract(
+        CONTRACT_ADDRESSES.CARD_CATALOG,
+        CardCatalogABI
+      );
+      const contractWithSigner = contract.connect(signer);
+      
+      const amountWei = ethers.parseEther(amount);
+      const tx = await contractWithSigner.wrap(amountWei);
+      
+      return {
+        hash: tx.hash,
+        wait: () => tx.wait(),
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to wrap tokens: ${error.message}`);
+    }
+  }
+  
+  async requestUnwrap(amount: string) {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const contract = this.getContract(
+        CONTRACT_ADDRESSES.CARD_CATALOG,
+        CardCatalogABI
+      );
+      const contractWithSigner = contract.connect(signer);
+      
+      const amountWei = ethers.parseEther(amount);
+      const tx = await contractWithSigner.requestUnwrap(amountWei);
+      
+      return {
+        hash: tx.hash,
+        wait: () => tx.wait(),
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to request unwrap: ${error.message}`);
+    }
+  }
+  
+  async completeUnwrap(requestIndex: number) {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const contract = this.getContract(
+        CONTRACT_ADDRESSES.CARD_CATALOG,
+        CardCatalogABI
+      );
+      const contractWithSigner = contract.connect(signer);
+      
+      const tx = await contractWithSigner.completeUnwrap(requestIndex);
+      
+      return {
+        hash: tx.hash,
+        wait: () => tx.wait(),
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to complete unwrap: ${error.message}`);
+    }
+  }
+  
+  async getStakedBalance(address: string): Promise<bigint> {
+    const contract = this.getContract(
+      CONTRACT_ADDRESSES.CARD_CATALOG,
+      CardCatalogABI
+    );
+    
+    try {
+      return await this.callContract<bigint>(contract, 'balanceOf', [address]);
+    } catch (error) {
+      throw new Error(`Failed to get staked balance: ${error}`);
+    }
+  }
+  
+  async getVotingPower(address: string): Promise<bigint> {
+    const contract = this.getContract(
+      CONTRACT_ADDRESSES.CARD_CATALOG,
+      CardCatalogABI
+    );
+    
+    try {
+      return await this.callContract<bigint>(contract, 'getTotalVotingPower', [address]);
+    } catch (error) {
+      throw new Error(`Failed to get voting power: ${error}`);
+    }
+  }
+  
+  async getAvailableVotingPower(address: string): Promise<bigint> {
+    const contract = this.getContract(
+      CONTRACT_ADDRESSES.CARD_CATALOG,
+      CardCatalogABI
+    );
+    
+    try {
+      return await this.callContract<bigint>(contract, 'getAvailableVotingPower', [address]);
+    } catch (error) {
+      throw new Error(`Failed to get available voting power: ${error}`);
+    }
+  }
+  
+  async getUnbondingRequests(address: string) {
+    const contract = this.getContract(
+      CONTRACT_ADDRESSES.CARD_CATALOG,
+      CardCatalogABI
+    );
+    
+    try {
+      return await this.callContract<any[]>(contract, 'getUnbondingRequests', [address]);
+    } catch (error) {
+      throw new Error(`Failed to get unbonding requests: ${error}`);
+    }
+  }
+  
+  // Voting methods
+  async delegateVotes(evermarkId: string, amount: string) {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const contract = this.getContract(
+        CONTRACT_ADDRESSES.BOOKMARK_VOTING,
+        BookmarkVotingABI
+      );
+      const contractWithSigner = contract.connect(signer);
+      
+      // The voting contract expects bookmarkId, not evermarkId
+      const voteData = translationService.prepareVotingData(evermarkId, amount);
+      const amountWei = ethers.parseEther(amount);
+      
+      const tx = await contractWithSigner.delegateVotes(voteData.bookmarkId, amountWei);
+      
+      return {
+        hash: tx.hash,
+        wait: () => tx.wait(),
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to delegate votes: ${error.message}`);
+    }
+  }
+}
+
+export const contractService = new ContractService();
+
+// Helper functions
+export const formatEther = (value: bigint | string): string => {
+  try {
+    return ethers.formatEther(value);
+  } catch (error) {
+    return '0';
+  }
+};
+
+export const parseEther = (value: string): bigint => {
+  try {
+    return ethers.parseEther(value);
+  } catch (error) {
+    return BigInt(0);
+  }
+};
