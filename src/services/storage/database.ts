@@ -1,48 +1,69 @@
-import { createClient } from '@supabase/supabase-js';
-import { API_CONFIG } from '../../config/constants';
-import { Evermark, EvermarkMetadata } from '../../types';
-import { Database, DbEvermark } from '../../types/database.types';
+// src/services/storage/database.ts
+import { Evermark } from '../../types/evermark.types'; // Fixed import path
 
-export const supabase = createClient<Database>(
-  API_CONFIG.SUPABASE_URL,
-  API_CONFIG.SUPABASE_ANON_KEY
-);
+// Local storage keys
+const STORAGE_KEYS = {
+  EVERMARKS: 'evermarks_data',
+  USER_EVERMARKS: 'user_evermarks',
+  USER_PROFILES: 'user_profiles',
+};
 
-class DatabaseService {
-  // Transform database evermark to app evermark
-  private transformDbEvermark(dbEvermark: DbEvermark): Evermark {
+class LocalDatabaseService {
+  // Transform generic evermark to app evermark
+  private transformEvermark(data: any): Evermark {
     return {
-      id: dbEvermark.id,
-      title: dbEvermark.title,
-      author: dbEvermark.author,
-      description: dbEvermark.description,
-      userId: dbEvermark.user_id,
-      verified: dbEvermark.verified,
-      createdAt: new Date(dbEvermark.created_at),
-      updatedAt: new Date(dbEvermark.updated_at),
-      metadata: dbEvermark.metadata as EvermarkMetadata,
+      id: data.id,
+      title: data.title || 'Untitled',
+      author: data.author || 'Unknown',
+      description: data.description || null,
+      userId: data.userId || data.user_id,
+      verified: data.verified || false,
+      createdAt: new Date(data.createdAt || data.created_at || Date.now()),
+      updatedAt: new Date(data.updatedAt || data.updated_at || Date.now()),
+      metadata: data.metadata,
     };
   }
 
-  // Evermark-related database operations
-  async saveEvermark(evermark: Partial<Evermark> & { userId: string; metadata: EvermarkMetadata }): Promise<Evermark> {
+  // Evermark-related operations
+  async saveEvermark(evermark: Partial<Evermark> & { metadata: any }): Promise<Evermark> {
     try {
-      const { data, error } = await supabase
-        .from('evermarks')
-        .insert([{
-          title: evermark.title || 'Untitled',
-          author: evermark.author || 'Unknown',
-          description: evermark.description || null,
-          user_id: evermark.userId,
-          verified: evermark.verified || false,
-          metadata: evermark.metadata,
-        }])
-        .select()
-        .single();
+      // Generate ID if not provided
+      const id = evermark.id || `evermark-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       
-      if (error) throw error;
+      // Create evermark object with proper structure
+      const newEvermark: Evermark = this.transformEvermark({
+        ...evermark,
+        id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
       
-      return this.transformDbEvermark(data);
+      // Get existing evermarks
+      const evermarks = this.getLocalEvermarks();
+      
+      // Check if evermark already exists
+      const index = evermarks.findIndex(e => e.id === id);
+      if (index >= 0) {
+        // Update existing
+        evermarks[index] = {
+          ...evermarks[index],
+          ...newEvermark,
+          updatedAt: new Date(),
+        };
+      } else {
+        // Add new
+        evermarks.push(newEvermark);
+      }
+      
+      // Save back to localStorage
+      localStorage.setItem(STORAGE_KEYS.EVERMARKS, JSON.stringify(evermarks));
+      
+      // Add to user's evermarks if userId is provided
+      if (evermark.userId) {
+        this.addToUserEvermarks(evermark.userId, id);
+      }
+      
+      return newEvermark;
     } catch (error: any) {
       throw new Error(`Failed to save evermark: ${error.message}`);
     }
@@ -50,18 +71,10 @@ class DatabaseService {
   
   async getEvermark(id: string): Promise<Evermark | null> {
     try {
-      const { data, error } = await supabase
-        .from('evermarks')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const evermarks = this.getLocalEvermarks();
+      const evermark = evermarks.find(e => e.id === id);
       
-      if (error) {
-        if (error.code === 'PGRST116') return null; // No rows returned
-        throw error;
-      }
-      
-      return this.transformDbEvermark(data);
+      return evermark || null;
     } catch (error: any) {
       throw new Error(`Failed to get evermark: ${error.message}`);
     }
@@ -69,15 +82,14 @@ class DatabaseService {
   
   async getEvermarksByUserId(userId: string): Promise<Evermark[]> {
     try {
-      const { data, error } = await supabase
-        .from('evermarks')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // Get user's evermark IDs
+      const userEvermarks = this.getUserEvermarks(userId);
       
-      if (error) throw error;
+      // Get all evermarks
+      const evermarks = this.getLocalEvermarks();
       
-      return data.map(this.transformDbEvermark);
+      // Filter by user's evermarks
+      return evermarks.filter(e => userEvermarks.includes(e.id));
     } catch (error: any) {
       throw new Error(`Failed to get user evermarks: ${error.message}`);
     }
@@ -85,15 +97,15 @@ class DatabaseService {
   
   async getAllEvermarks(limit = 50, offset = 0): Promise<Evermark[]> {
     try {
-      const { data, error } = await supabase
-        .from('evermarks')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+      const evermarks = this.getLocalEvermarks();
       
-      if (error) throw error;
+      // Sort by creation date (newest first)
+      evermarks.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       
-      return data.map(this.transformDbEvermark);
+      // Slice for pagination
+      return evermarks.slice(offset, offset + limit);
     } catch (error: any) {
       throw new Error(`Failed to get evermarks: ${error.message}`);
     }
@@ -101,30 +113,58 @@ class DatabaseService {
   
   async updateEvermark(id: string, updates: Partial<Evermark>): Promise<Evermark | null> {
     try {
-      const updateData: any = {};
+      const evermarks = this.getLocalEvermarks();
+      const index = evermarks.findIndex(e => e.id === id);
       
-      if (updates.title !== undefined) updateData.title = updates.title;
-      if (updates.author !== undefined) updateData.author = updates.author;
-      if (updates.description !== undefined) updateData.description = updates.description;
-      if (updates.verified !== undefined) updateData.verified = updates.verified;
-      if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
+      if (index === -1) {
+        return null;
+      }
       
-      updateData.updated_at = new Date().toISOString();
+      // Update evermark
+      evermarks[index] = {
+        ...evermarks[index],
+        ...updates,
+        updatedAt: new Date(),
+      };
       
-      const { data, error } = await supabase
-        .from('evermarks')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
+      // Save back to localStorage
+      localStorage.setItem(STORAGE_KEYS.EVERMARKS, JSON.stringify(evermarks));
       
-      if (error) throw error;
-      
-      return this.transformDbEvermark(data);
+      return evermarks[index];
     } catch (error: any) {
       throw new Error(`Failed to update evermark: ${error.message}`);
     }
   }
+  
+  // Helper methods for local storage
+  private getLocalEvermarks(): Evermark[] {
+    const data = localStorage.getItem(STORAGE_KEYS.EVERMARKS);
+    return data ? JSON.parse(data) : [];
+  }
+  
+  private getUserEvermarks(userId: string): string[] {
+    const data = localStorage.getItem(STORAGE_KEYS.USER_EVERMARKS);
+    const userEvermarks = data ? JSON.parse(data) : {};
+    return userEvermarks[userId] || [];
+  }
+  
+  private addToUserEvermarks(userId: string, evermarkId: string) {
+    const data = localStorage.getItem(STORAGE_KEYS.USER_EVERMARKS);
+    const userEvermarks = data ? JSON.parse(data) : {};
+    
+    // Initialize user's evermarks if not exists
+    if (!userEvermarks[userId]) {
+      userEvermarks[userId] = [];
+    }
+    
+    // Add evermark ID if not already in the list
+    if (!userEvermarks[userId].includes(evermarkId)) {
+      userEvermarks[userId].push(evermarkId);
+    }
+    
+    // Save back to localStorage
+    localStorage.setItem(STORAGE_KEYS.USER_EVERMARKS, JSON.stringify(userEvermarks));
+  }
 }
 
-export const databaseService = new DatabaseService();
+export const databaseService = new LocalDatabaseService();

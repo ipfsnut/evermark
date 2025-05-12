@@ -2,7 +2,7 @@
 import { contractService } from '../blockchain/contracts';
 import { ipfsService } from '../storage/ipfs';
 import { translationService } from '../blockchain/translation';
-import { CreateEvermarkInput, Evermark } from '../../types/evermark.types';
+import { CreateEvermarkInput, Evermark } from '../../types/evermark.types'; // Fixed import path
 import { CONTRACT_ADDRESSES } from '../../config/constants';
 import BookmarkNFTABI from '../../config/abis/BookmarkNFT.json';
 import BookmarkVotingABI from '../../config/abis/BookmarkVoting.json';
@@ -194,9 +194,7 @@ class EvermarkService {
         for (const tokenId of tokenIds) {
           try {
             const evermark = await this.fetch(tokenId);
-            if (evermark) {
-              evermarks.push(evermark);
-            }
+            if (evermark) evermarks.push(evermark);
           } catch (error) {
             console.warn(`Failed to fetch evermark ${tokenId}:`, error);
             continue;
@@ -222,19 +220,8 @@ class EvermarkService {
   
   async getVotes(evermarkId: string): Promise<bigint> {
     try {
-      const votingContract = contractService.getContract(
-        CONTRACT_ADDRESSES.BOOKMARK_VOTING,
-        BookmarkVotingABI
-      );
-      
-      // Translate evermarkId to bookmarkId for contract call
-      const voteData = translationService.prepareVotingData(evermarkId, '0');
-      
-      return await contractService.callContract(
-        votingContract,
-        'getBookmarkVotes',
-        [voteData.bookmarkId]
-      );
+      // Use the public method instead of trying to access private methods
+      return await contractService.getBookmarkVotes(evermarkId);
     } catch (error: any) {
       throw new Error(`Failed to get votes: ${error.message}`);
     }

@@ -7,7 +7,7 @@ import { authService, userService } from '../services/auth.service';
 export function useAuth() {
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
-  const { signMessage } = useSignMessage();
+  const { signMessageAsync } = useSignMessage(); // Changed from signMessage to signMessageAsync
   
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -77,7 +77,7 @@ export function useAuth() {
 
   // Sign in with wallet
   const signIn = useCallback(async () => {
-    if (!address || !signMessage) {
+    if (!address || !signMessageAsync) {
       setAuthState(prev => ({ ...prev, error: 'Wallet not connected' }));
       return false;
     }
@@ -89,8 +89,8 @@ export function useAuth() {
       const nonce = authService.generateNonce();
       const message = `Sign this message to authenticate with Evermark.\n\nAddress: ${address}\nNonce: ${nonce}\nTimestamp: ${Date.now()}`;
       
-      // Sign message
-      const signature = await signMessage({ message });
+      // Sign message - using signMessageAsync to get a Promise<string>
+      const signature = await signMessageAsync({ message });
       
       // Verify signature
       const isValid = await authService.verifySignature(message, signature, address);
@@ -130,7 +130,7 @@ export function useAuth() {
       }));
       return false;
     }
-  }, [address, signMessage]);
+  }, [address, signMessageAsync]);
 
   // Sign out
   const signOut = useCallback(async () => {

@@ -1,5 +1,5 @@
-export { ipfsService } from './ipfs';
-export { databaseService, supabase } from './database';
+import { ipfsService } from './ipfs'; // Make sure this path is correct
+import { databaseService } from './database';
 
 // Combined storage service for convenience
 export const storageService = {
@@ -8,12 +8,20 @@ export const storageService = {
     // 1. Upload metadata to IPFS
     const metadataUri = await ipfsService.uploadJSON(metadata, `evermark-${tokenId}`);
     
-    // 2. Save to database
+    // 2. Save to local database
     const evermark = await databaseService.saveEvermark({
-      tokenId,
-      metadataUri,
-      owner,
-      metadata,
+      id: tokenId,
+      title: metadata.title || 'Untitled',
+      author: metadata.author || 'Unknown',
+      description: metadata.description || null,
+      userId: owner,
+      verified: false,
+      metadata: {
+        ...metadata,
+        tokenId,
+        metadataUri,
+        owner
+      },
     });
     
     return evermark;
@@ -22,20 +30,31 @@ export const storageService = {
   // Get complete evermark data
   async getEvermarkData(tokenId: string) {
     // 1. Get from database
-    const evermark = await databaseService.getEvermarkByTokenId(tokenId);
+    const evermark = await databaseService.getEvermark(tokenId);
     
     if (!evermark) {
       return null;
     }
     
-    // 2. Fetch metadata from IPFS
-    try {
-      const metadata = await ipfsService.fetchJSON(evermark.metadataUri);
-      return { ...evermark, metadata };
-    } catch (error) {
-      console.error('Failed to fetch metadata from IPFS:', error);
-      // Return database version as fallback
-      return evermark;
+    // 2. Fetch metadata from IPFS if needed
+    if (evermark.metadata?.metadataUri && !evermark.metadata.title) {
+      try {
+        const metadata = await ipfsService.fetchJSON(evermark.metadata.metadataUri);
+        return { 
+          ...evermark, 
+          metadata: {
+            ...evermark.metadata,
+            ...metadata
+          }
+        };
+      } catch (error) {
+        console.error('Failed to fetch metadata from IPFS:', error);
+      }
     }
+    
+    return evermark;
   },
 };
+
+// Re-export
+export { ipfsService, databaseService };

@@ -20,8 +20,8 @@ class ContractService {
     this.provider = new JsonRpcProvider(API_CONFIG.RPC_URL);
   }
   
-  // Get contract instance
-  private getContract(address: string, abi: any[], runner?: ContractRunner): Contract {
+  // Changed from private to public so it can be used by other services
+  public getContract(address: string, abi: any[], runner?: ContractRunner): Contract {
     const key = `${address.toLowerCase()}_${runner ? 'signer' : 'provider'}`;
     
     if (!this.contracts.has(key)) {
@@ -30,6 +30,17 @@ class ContractService {
     }
     
     return this.contracts.get(key)!;
+  }
+  
+  // Get voting contract specifically
+  public getVotingContract(useSigner = false): Promise<Contract> {
+    return this.getSigner().then(signer => {
+      return this.getContract(
+        CONTRACT_ADDRESSES.BOOKMARK_VOTING,
+        BookmarkVotingABI,
+        useSigner ? signer : undefined
+      );
+    });
   }
   
   // Call contract method with caching
@@ -76,6 +87,37 @@ class ContractService {
       this.cache.clear();
     }
   }
+
+  // Get current wallet address from ethereum provider
+  async getCurrentWalletAddress(): Promise<string | null> {
+    if (!window.ethereum) {
+      return null;
+    }
+    
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const accounts = await provider.send('eth_requestAccounts', []);
+      return accounts[0] || null;
+    } catch (error) {
+      console.error('Failed to get wallet address:', error);
+      return null;
+    }
+  }
+  
+  // Get signer from the browser wallet
+  async getSigner(): Promise<any> {
+    if (!window.ethereum) {
+      throw new Error('No wallet detected');
+    }
+    
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      return await provider.getSigner();
+    } catch (error) {
+      console.error('Failed to get signer:', error);
+      throw error;
+    }
+  }
   
   // Add missing getNSIBalance method
   async getNSIBalance(address: string): Promise<bigint> {
@@ -102,8 +144,7 @@ class ContractService {
       }
       
       // Get signer from browser
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      const signer = await this.getSigner();
       
       // Get contract with signer
       const contract = this.getContract(
@@ -183,13 +224,8 @@ class ContractService {
   // Card Catalog methods for staking
   async wrapTokens(amount: string) {
     try {
-      // Check if window.ethereum exists
-      if (!window.ethereum) {
-        throw new Error('No wallet detected');
-      }
-      
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      // Get signer
+      const signer = await this.getSigner();
       
       const contract = this.getContract(
         CONTRACT_ADDRESSES.CARD_CATALOG,
@@ -211,13 +247,8 @@ class ContractService {
   
   async requestUnwrap(amount: string) {
     try {
-      // Check if window.ethereum exists
-      if (!window.ethereum) {
-        throw new Error('No wallet detected');
-      }
-      
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      // Get signer
+      const signer = await this.getSigner();
       
       const contract = this.getContract(
         CONTRACT_ADDRESSES.CARD_CATALOG,
@@ -239,13 +270,8 @@ class ContractService {
   
   async completeUnwrap(requestIndex: number) {
     try {
-      // Check if window.ethereum exists
-      if (!window.ethereum) {
-        throw new Error('No wallet detected');
-      }
-      
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      // Get signer
+      const signer = await this.getSigner();
       
       const contract = this.getContract(
         CONTRACT_ADDRESSES.CARD_CATALOG,
@@ -316,16 +342,26 @@ class ContractService {
     }
   }
   
+  // Get bookmark votes
+  async getBookmarkVotes(evermarkId: string): Promise<bigint> {
+    const votingContract = this.getContract(
+      CONTRACT_ADDRESSES.BOOKMARK_VOTING,
+      BookmarkVotingABI
+    );
+
+    try {
+      // No need for translation since we're directly calling the contract method
+      return await this.callContract<bigint>(votingContract, 'getBookmarkVotes', [evermarkId]);
+    } catch (error) {
+      throw new Error(`Failed to get bookmark votes: ${error}`);
+    }
+  }
+  
   // Voting methods
   async delegateVotes(evermarkId: string, amount: string) {
     try {
-      // Check if window.ethereum exists
-      if (!window.ethereum) {
-        throw new Error('No wallet detected');
-      }
-      
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      // Get signer
+      const signer = await this.getSigner();
       
       const contract = this.getContract(
         CONTRACT_ADDRESSES.BOOKMARK_VOTING,
