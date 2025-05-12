@@ -25,30 +25,46 @@ export function useAuth() {
   // Update connection status
   useEffect(() => {
     setAuthState(prev => ({ ...prev, isConnected }));
-  }, [isConnected]);
+    
+    // If disconnected, clear the session
+    if (!isConnected && authState.session) {
+      authService.clearSession();
+      setAuthState(prev => ({ 
+        ...prev, 
+        session: null,
+        user: null
+      }));
+    }
+  }, [isConnected, authState.session]);
 
   // Load existing session
   const loadSession = useCallback(async () => {
-    const token = authService.getSessionToken();
-    if (!token) return;
+    console.log("Loading session...");
+    const session = authService.getSession();
+    if (!session) {
+      console.log("No session found");
+      return;
+    }
 
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      const { valid, userId, walletAddress } = await authService.validateSession(token);
+      const { valid, walletAddress } = await authService.validateSession(session.token);
       
-      if (valid && userId) {
+      if (valid && walletAddress) {
+        console.log("Session valid, getting user profile");
         const user = await userService.getUserProfile();
         if (user) {
           setAuthState(prev => ({
             ...prev,
             user,
-            session: { token, userId, walletAddress: walletAddress!, expiresAt: '' },
+            session,
             isLoading: false,
           }));
         }
       } else {
         // Invalid session, clear it
+        console.log("Session invalid, clearing");
         authService.clearSession();
         setAuthState(prev => ({ ...prev, isLoading: false }));
       }
@@ -71,39 +87,36 @@ export function useAuth() {
     try {
       // Generate nonce
       const nonce = authService.generateNonce();
-      const message = `Sign this message to authenticate with Evermark.\n\nAddress: ${address}\nNonce: ${nonce}`;
+      const message = `Sign this message to authenticate with Evermark.\n\nAddress: ${address}\nNonce: ${nonce}\nTimestamp: ${Date.now()}`;
       
       // Sign message
       const signature = await signMessage({ message });
       
-      // Authenticate with backend
-      const response = await fetch('/.netlify/functions/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress: address,
-          signature,
-          message,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Authentication failed');
-      
-      const { token, userId } = await response.json();
-      
-      // Store session
-      authService.storeSession(token);
-      
-      // Get user profile
-      const user = await userService.getUserProfile();
-      if (!user) {
-        throw new Error('Failed to fetch user profile');
+      // Verify signature
+      const isValid = await authService.verifySignature(message, signature, address);
+      if (!isValid) {
+        throw new Error('Signature verification failed');
       }
+      
+      // Create blockchain session
+      const session = await authService.createBlockchainSession(address);
+      
+      // Get or create user profile
+      const user = await userService.getUserProfile() || {
+        id: session.userId,
+        walletAddress: address,
+        username: `User ${address.slice(0, 6)}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        evermarksCount: 0,
+        votingPower: 0,
+        totalVotes: 0,
+      };
       
       setAuthState(prev => ({
         ...prev,
         user,
-        session: { token, userId, walletAddress: address, expiresAt: '' },
+        session,
         isLoading: false,
       }));
       
@@ -124,10 +137,6 @@ export function useAuth() {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      if (authState.session?.token) {
-        await authService.deleteSession(authState.session.token);
-      }
-      
       authService.clearSession();
       disconnect();
       
@@ -142,7 +151,7 @@ export function useAuth() {
       console.error('Sign out failed:', error);
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
-  }, [authState.session?.token, disconnect]);
+  }, [disconnect]);
 
   // Helper to check if user is authenticated
   const isAuthenticated = authState.user !== null && authState.session !== null;
