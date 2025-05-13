@@ -1,3 +1,4 @@
+// src/App.tsx
 import { sdk } from "@farcaster/frame-sdk";
 import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -10,6 +11,10 @@ import CreateEvermarkPage from "./pages/CreateEvermarkPage";
 import MyEvermarksPage from "./pages/MyEvermarksPage";
 import EvermarkDetailPage from "./pages/EvermarkDetailPage";
 import ProfilePage from "./pages/ProfilePage";
+import ErrorBoundary from "./components/common/ErrorBoundary";
+
+// Import test console for development
+import TestConsole from "./components/testing/TestConsole";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,21 +31,46 @@ function App() {
   }, []);
 
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <Router>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/create" element={<CreateEvermarkPage />} />
-              <Route path="/my-evermarks" element={<MyEvermarksPage />} />
-              <Route path="/evermark/:id" element={<EvermarkDetailPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-            </Routes>
-          </Layout>
-        </Router>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <ErrorBoundary component="App">
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <Router>
+            <Layout>
+              <Routes>
+                <Route path="/" element={
+                  <ErrorBoundary component="HomePage">
+                    <HomePage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/create" element={
+                  <ErrorBoundary component="CreateEvermarkPage">
+                    <CreateEvermarkPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/my-evermarks" element={
+                  <ErrorBoundary component="MyEvermarksPage">
+                    <MyEvermarksPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/evermark/:id" element={
+                  <ErrorBoundary component="EvermarkDetailPage">
+                    <EvermarkDetailPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/profile" element={
+                  <ErrorBoundary component="ProfilePage">
+                    <ProfilePage />
+                  </ErrorBoundary>
+                } />
+              </Routes>
+            </Layout>
+            
+            {/* Test Console - only shown in development */}
+            {process.env.NODE_ENV === 'development' && <TestConsole />}
+          </Router>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </ErrorBoundary>
   );
 }
 

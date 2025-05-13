@@ -1,7 +1,9 @@
+// src/hooks/useBlockchain.ts - Enhanced with better error handling
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount, usePublicClient } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { contractService, formatEther } from '../services/blockchain';
 import { TokenBalance, StakeInfo, TransactionState } from '../types';
+import { errorLogger } from '../utils/error-logger';
 
 interface BlockchainState {
   balances: TokenBalance;
@@ -21,7 +23,6 @@ interface UseBlockchainReturn extends BlockchainState {
 
 export function useBlockchain(): UseBlockchainReturn {
   const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
   
   const [state, setState] = useState<BlockchainState>({
     balances: {
@@ -63,17 +64,30 @@ export function useBlockchain(): UseBlockchainReturn {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      // Fetch all balances in parallel
+      // Fetch all balances in parallel - note we're using the enhanced contract service
+      // methods that now have proper error handling with fallbacks
       const [
         nsiBalance,
         stakedBalance,
         votingPower,
         availableVotingPower,
       ] = await Promise.all([
-        contractService.getNSIBalance(address),
-        contractService.getStakedBalance(address),
-        contractService.getVotingPower(address),
-        contractService.getAvailableVotingPower(address),
+        contractService.getNSIBalance(address).catch(err => {
+          errorLogger.log('useBlockchain', err, { method: 'getNSIBalance', address });
+          return BigInt(0);
+        }),
+        contractService.getStakedBalance(address).catch(err => {
+          errorLogger.log('useBlockchain', err, { method: 'getStakedBalance', address });
+          return BigInt(0);
+        }),
+        contractService.getVotingPower(address).catch(err => {
+          errorLogger.log('useBlockchain', err, { method: 'getVotingPower', address });
+          return BigInt(0);
+        }),
+        contractService.getAvailableVotingPower(address).catch(err => {
+          errorLogger.log('useBlockchain', err, { method: 'getAvailableVotingPower', address });
+          return BigInt(0);
+        }),
       ]);
       
       // Fetch unbonding requests separately since it might not exist yet
@@ -81,7 +95,7 @@ export function useBlockchain(): UseBlockchainReturn {
       try {
         unbondingRequests = await contractService.getUnbondingRequests(address);
       } catch (error) {
-        console.warn('getUnbondingRequests not available or failed:', error);
+        errorLogger.log('useBlockchain', error, { method: 'getUnbondingRequests', address });
         unbondingRequests = [];
       }
       
@@ -91,20 +105,22 @@ export function useBlockchain(): UseBlockchainReturn {
       setState(prev => ({
         ...prev,
         balances: {
-          available: nsiBalance ? BigInt(nsiBalance) : BigInt(0),
-          staked: stakedBalance ? BigInt(stakedBalance) : BigInt(0),
-          votingPower: votingPower ? BigInt(votingPower) : BigInt(0),
+          available: nsiBalance,
+          staked: stakedBalance,
+          votingPower: votingPower,
           locked: lockedAmount,
         },
         stakeInfo: {
-          amount: stakedBalance ? BigInt(stakedBalance) : BigInt(0),
-          votingPower: availableVotingPower ? BigInt(availableVotingPower) : BigInt(0),
+          amount: stakedBalance,
+          votingPower: availableVotingPower,
           unbondingRequests: unbondingRequests || [],
         },
         loading: false,
       }));
     } catch (error: any) {
       console.error('Failed to refresh balances:', error);
+      errorLogger.log('useBlockchain', error, { method: 'refreshBalances', address });
+      
       setState(prev => ({
         ...prev,
         loading: false,
@@ -144,6 +160,8 @@ export function useBlockchain(): UseBlockchainReturn {
       return true;
     } catch (error: any) {
       console.error('Failed to stake tokens:', error);
+      errorLogger.log('useBlockchain', error, { method: 'stakeTokens', amount, address });
+      
       setState(prev => ({
         ...prev,
         transaction: { 
@@ -188,6 +206,8 @@ export function useBlockchain(): UseBlockchainReturn {
       return true;
     } catch (error: any) {
       console.error('Failed to request withdrawal:', error);
+      errorLogger.log('useBlockchain', error, { method: 'withdrawTokens', amount, address });
+      
       setState(prev => ({
         ...prev,
         transaction: { 
@@ -232,6 +252,8 @@ export function useBlockchain(): UseBlockchainReturn {
       return true;
     } catch (error: any) {
       console.error('Failed to complete withdrawal:', error);
+      errorLogger.log('useBlockchain', error, { method: 'completeUnwrap', requestIndex, address });
+      
       setState(prev => ({
         ...prev,
         transaction: { 

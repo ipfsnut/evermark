@@ -1,0 +1,94 @@
+# Evermark Refactoring Process
+
+## Current Status
+We have successfully refactored the Farcaster mini-app to eliminate Supabase dependencies. The app now uses:
+- Blockchain as the primary data source
+- Local storage for caching and state persistence
+- IPFS for metadata storage with local fallbacks
+- Wallet-based authentication
+
+## Phase 1: Error Testing & Fixing
+**Goal**: Identify and resolve all runtime errors to ensure a stable application
+
+### Testing Process
+1. Systematically test all user flows:
+   - Authentication (connect wallet, sign in)
+   - Browsing Evermarks
+   - Creating new Evermarks
+   - Viewing Evermark details
+   - Voting on Evermarks
+   - Profile and staking functionality
+
+2. Document all errors using the errorform.txt template
+   - Focus on console errors
+   - Categorize by severity and type
+   - Identify patterns in errors
+
+3. Implement fixes:
+   - Add graceful fallbacks for blockchain operation failures
+   - Implement better error handling throughout the app
+   - Focus on UX during error states
+
+### Key Areas to Test
+- Contract interactions (reading and writing)
+- IPFS uploads and retrievals
+- Wallet connection edge cases
+- Data loading states
+- Cross-device compatibility
+
+## Phase 2: Styling & UI Enhancement
+**Goal**: Implement a cohesive library-themed UI with dark mode support
+
+### Styling Process
+1. Create core theme components:
+   - Theme context and provider
+   - Basic component library (cards, buttons, inputs)
+   - Skeumorphic elements (books, shelves, paper textures)
+
+2. Apply styling systematically:
+   - Start with layout components
+   - Style each page in sequence
+   - Ensure consistent spacing and typography
+
+3. Implement dark mode:
+   - Create toggle component
+   - Test all UI elements in both modes
+   - Ensure proper contrast and readability
+
+### UI Enhancement Areas
+- Loading states and skeletons
+- Error messaging
+- Empty states
+- Animations and transitions
+- Improved typography and spacing
+
+## Phase 3: Feature Enhancements
+**Goal**: Add functionality that improves the user experience
+
+1. Offline support improvements:
+   - Better caching strategies
+   - Offline indication
+   - Queue operations for when network is available
+
+2. Performance optimizations:
+   - Lazy loading components
+   - Virtualized lists for large data sets
+   - Code splitting
+
+3. User experience improvements:
+   - Guided tutorials
+   - Better first-time experience
+   - Transaction status indicators
+
+## Current Technical Debt
+- Inconsistent error handling
+- Limited blockchain indexing capabilities
+- Potential performance issues with large collections
+- Limited test coverage
+
+## Success Criteria
+- No console errors during normal operation
+- Graceful degradation when services are unavailable
+- Consistent styling across all components
+- Dark mode toggle works correctly
+- Mobile-friendly experience
