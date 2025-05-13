@@ -13,7 +13,7 @@
   }
 }
 
-/* Fix your texture paths */
+/* Texture backgrounds */
 .bg-wood-texture {
   background-image: url('/textures/wood-grain.jpg');
   background-size: cover;
@@ -31,6 +31,12 @@
   pointer-events: none;
 }
 
+.bg-parchment-texture {
+  background-image: url('/textures/parchment.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
 .bg-paper-texture {
   background-color: #efe8d7;
   background-image: linear-gradient(#e5dbc1 1px, transparent 1px), linear-gradient(to right, #e5dbc1 1px, #efe8d7 1px);
@@ -42,4 +48,29 @@
   background-image: url('/textures/index-card.png');
   background-size: cover;
   background-position: center;
+}
+
+/* Add notebook paper texture */
+.bg-notebook-paper {
+  background-image: url('/textures/notebook-paper.jpg');
+  background-size: cover;
+  background-position: top center;
+}
+
+/* Page turning animation */
+@keyframes page-turn {
+  0% {
+    transform: rotateY(0deg);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  100% {
+    transform: rotateY(-2deg);
+    box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.page-turn-effect {
+  animation: page-turn 0.5s ease-out forwards;
+  transform-origin: left center;
+  perspective: 1000px;
 }

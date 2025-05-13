@@ -1,5 +1,5 @@
 // src/components/catalog/CatalogDrawer.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { CatalogCard } from './CatalogCard';
 import { Evermark } from '../../types/evermark.types';
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
@@ -15,18 +15,18 @@ export const CatalogDrawer: React.FC<CatalogDrawerProps> = ({
   evermarks, 
   collapsible = true 
 }) => {
-  const [isOpen, setIsOpen] = React.useState(true);
+  const [isOpen, setIsOpen] = useState(true);
   
   return (
     <div className="mb-8">
-      {/* Drawer header */}
+      {/* Drawer header - wood texture */}
       <div 
-        className={`bg-wood text-parchment-light p-3 rounded-t-lg flex justify-between items-center shadow-drawer ${
+        className={`bg-wood-texture p-3 rounded-t-lg flex justify-between items-center shadow-drawer ${
           collapsible ? 'cursor-pointer' : ''
         }`}
         onClick={() => collapsible && setIsOpen(!isOpen)}
       >
-        <h2 className="font-serif text-xl tracking-wide">{title}</h2>
+        <h2 className="font-serif text-xl tracking-wide text-parchment-light">{title}</h2>
         <div className="flex items-center space-x-2">
           {/* Brass drawer pulls */}
           <div className="w-3 h-3 rounded-full bg-brass shadow-sm"></div>
@@ -44,9 +44,9 @@ export const CatalogDrawer: React.FC<CatalogDrawerProps> = ({
         </div>
       </div>
       
-      {/* Drawer content */}
+      {/* Drawer content - parchment texture */}
       {isOpen && (
-        <div className="bg-parchment-light p-5 rounded-b-lg shadow-drawer border-x border-b border-wood-light">
+        <div className="bg-parchment-texture p-5 rounded-b-lg shadow-drawer border-x border-b border-wood-light">
           {evermarks.length === 0 ? (
             <div className="text-center py-10 italic text-ink-light border border-dashed border-wood-light bg-parchment bg-opacity-70 rounded">
               <p>This drawer is empty.</p>

@@ -25,7 +25,7 @@ export const ConnectButton: React.FC = () => {
         </div>
         <button
           onClick={() => signOut()}
-          className="px-4 py-1.5 bg-parchment text-ink-dark text-sm rounded-md border border-wood-light hover:bg-parchment-dark"
+          className="px-4 py-1.5 bg-parchment text-ink-dark text-sm rounded-md border border-wood-light hover:bg-parchment-dark font-serif"
         >
           Sign Out
         </button>
@@ -38,7 +38,7 @@ export const ConnectButton: React.FC = () => {
     return (
       <button
         disabled
-        className="px-4 py-2 bg-parchment-dark text-ink-light rounded-md opacity-50 cursor-not-allowed"
+        className="px-4 py-2 bg-parchment-dark text-ink-light rounded-md opacity-50 cursor-not-allowed font-serif"
       >
         Connecting...
       </button>
@@ -52,7 +52,7 @@ export const ConnectButton: React.FC = () => {
         <button
           key={connector.id}
           onClick={handleConnect(connector)}
-          className="px-4 py-2 bg-brass text-ink-dark rounded-md hover:bg-brass-dark shadow-sm transition-colors"
+          className="px-4 py-2 bg-brass text-ink-dark rounded-md hover:bg-brass-dark transition-colors shadow-sm font-serif"
         >
           Connect {connector.name}
         </button>

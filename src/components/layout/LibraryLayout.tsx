@@ -30,7 +30,7 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
   const isActive = (path: string) => location.pathname === path;
   
   return (
-    <div className="min-h-screen bg-wood-grain bg-cover">
+    <div className="min-h-screen flex flex-col bg-wood-texture">
       {/* Header - Library Shelf */}
       <header className="bg-wood-dark border-b border-wood-light shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,10 +122,10 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
       </div>
       
       {/* Main Content */}
-      <div className="py-6">
+      <div className="py-6 flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Library Desk */}
-          <div className="bg-parchment rounded-lg shadow-inner p-6 sm:p-8 border border-wood-dark">
+          <div className="bg-parchment-texture rounded-lg shadow-inner p-6 sm:p-8 border border-wood-dark">
             {children}
           </div>
         </div>

@@ -4,13 +4,12 @@ import { useEvermarks } from '../hooks/useEvermarks';
 import { useAuth } from '../hooks/useAuth';
 import { 
   ExternalLinkIcon, 
-  VoteIcon, 
+  BookOpenIcon, 
   UserIcon, 
   CalendarIcon, 
   TagIcon,
   ArrowLeftIcon,
-  ChevronUpIcon,
-  ChevronDownIcon
+  VoteIcon
 } from 'lucide-react';
 
 const EvermarkDetailPage: React.FC = () => {
@@ -75,16 +74,19 @@ const EvermarkDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center items-center min-h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wood"></div>
       </div>
     );
   }
 
   if (error || !selectedEvermark) {
     return (
-      <div className="text-center py-12">
-        <p className="text-red-600">Error loading evermark. Please try again.</p>
+      <div className="text-center py-12 bg-parchment-texture rounded-lg">
+        <p className="text-red-600 font-serif">Error loading evermark. Please try again.</p>
+        <Link to="/" className="mt-4 inline-block text-wood hover:text-wood-dark font-serif">
+          Return to Catalog
+        </Link>
       </div>
     );
   }
@@ -97,23 +99,25 @@ const EvermarkDetailPage: React.FC = () => {
       <div className="mb-6">
         <Link 
           to="/" 
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          className="inline-flex items-center text-sm text-wood hover:text-wood-dark transition-colors font-serif"
         >
           <ArrowLeftIcon className="w-4 h-4 mr-1" />
-          Back to Evermarks
+          Back to Catalog
         </Link>
       </div>
 
       {/* Main Content */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-parchment-texture rounded-lg shadow-lg overflow-hidden border border-wood-light">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-8 text-white">
-          <h1 className="text-3xl font-bold">{selectedEvermark.title}</h1>
-          <div className="flex items-center mt-4 text-blue-100">
-            <UserIcon className="w-4 h-4 mr-1" />
-            <span className="mr-4">by {selectedEvermark.author}</span>
-            <CalendarIcon className="w-4 h-4 mr-1" />
-            <span>{new Date(selectedEvermark.createdAt).toLocaleDateString()}</span>
+        <div className="bg-wood-texture px-6 py-8 text-parchment-light relative">
+          <div className="relative z-10">
+            <h1 className="text-3xl font-serif font-bold">{selectedEvermark.title}</h1>
+            <div className="flex items-center mt-4 text-parchment">
+              <UserIcon className="w-4 h-4 mr-1" />
+              <span className="mr-4 font-serif">by {selectedEvermark.author}</span>
+              <CalendarIcon className="w-4 h-4 mr-1" />
+              <span className="font-serif">{new Date(selectedEvermark.createdAt).toLocaleDateString()}</span>
+            </div>
           </div>
         </div>
 
@@ -122,8 +126,8 @@ const EvermarkDetailPage: React.FC = () => {
           {/* Description */}
           {selectedEvermark.description && (
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Description</h2>
-              <p className="text-gray-600">{selectedEvermark.description}</p>
+              <h2 className="text-lg font-serif font-semibold text-ink-dark mb-2">Description</h2>
+              <p className="text-ink-light font-serif">{selectedEvermark.description}</p>
             </div>
           )}
 
@@ -134,7 +138,7 @@ const EvermarkDetailPage: React.FC = () => {
                 href={selectedEvermark.metadata.external_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                className="inline-flex items-center text-brass hover:text-brass-dark transition-colors font-serif"
               >
                 <ExternalLinkIcon className="w-4 h-4 mr-1" />
                 View Original Content
@@ -145,12 +149,12 @@ const EvermarkDetailPage: React.FC = () => {
           {/* Tags */}
           {selectedEvermark.metadata?.tags && selectedEvermark.metadata.tags.length > 0 && (
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Tags</h2>
+              <h2 className="text-lg font-serif font-semibold text-ink-dark mb-2">Tags</h2>
               <div className="flex flex-wrap gap-2">
                 {selectedEvermark.metadata.tags.map((tag) => (
                   <span 
                     key={tag}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700"
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-serif bg-parchment text-ink-dark border border-wood-light"
                   >
                     <TagIcon className="w-3 h-3 mr-1" />
                     {tag}
@@ -162,8 +166,8 @@ const EvermarkDetailPage: React.FC = () => {
 
           {/* Voting Section */}
           {isAuthenticated && !isOwner && (
-            <div className="border-t pt-6 mt-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Vote on this Evermark</h2>
+            <div className="border-t border-wood-light pt-6 mt-6">
+              <h2 className="text-lg font-serif font-semibold text-ink-dark mb-4">Vote on this Evermark</h2>
               
               <div className="flex items-center gap-4 mb-4">
                 <input
@@ -171,17 +175,17 @@ const EvermarkDetailPage: React.FC = () => {
                   value={voteAmount}
                   onChange={(e) => setVoteAmount(e.target.value)}
                   placeholder="Amount to vote"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass font-serif bg-parchment-light bg-opacity-80"
                   min="0"
                   step="0.01"
                 />
                 <button
                   onClick={handleVote}
                   disabled={voting || !voteAmount}
-                  className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  className="px-6 py-2 bg-brass text-ink-dark rounded-md hover:bg-brass-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center font-serif"
                 >
                   {voting ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-ink-dark mr-2"></div>
                   ) : (
                     <VoteIcon className="w-4 h-4 mr-2" />
                   )}
@@ -190,10 +194,10 @@ const EvermarkDetailPage: React.FC = () => {
               </div>
 
               {voteError && (
-                <p className="text-sm text-red-600 mb-4">{voteError}</p>
+                <p className="text-sm text-red-600 mb-4 font-serif">{voteError}</p>
               )}
 
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-ink-light font-serif">
                 Total votes: <span className="font-medium">{totalVotes}</span>
               </div>
             </div>
@@ -201,32 +205,32 @@ const EvermarkDetailPage: React.FC = () => {
 
           {/* Owner Actions */}
           {isOwner && (
-            <div className="border-t pt-6 mt-6">
-              <p className="text-sm text-green-600">You own this Evermark</p>
+            <div className="border-t border-wood-light pt-6 mt-6">
+              <p className="text-sm text-green-600 font-serif">You own this Evermark</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Additional Info */}
-      <div className="mt-6 bg-gray-50 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-gray-900 mb-2">Blockchain Info</h3>
-        <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div className="mt-6 bg-index-card rounded-lg p-4 border border-wood-light">
+        <h3 className="text-sm font-serif font-medium text-ink-dark mb-2">Catalog Information</h3>
+        <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-serif">
           <div>
-            <dt className="text-gray-500">Token ID</dt>
-            <dd className="text-gray-900 font-mono">{selectedEvermark.metadata?.tokenId}</dd>
+            <dt className="text-ink-light">Token ID</dt>
+            <dd className="text-ink-dark font-mono">{selectedEvermark.metadata?.tokenId}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">Contract</dt>
-            <dd className="text-gray-900 font-mono">Evermark NFT</dd>
+            <dt className="text-ink-light">Contract</dt>
+            <dd className="text-ink-dark font-serif">Evermark NFT</dd>
           </div>
           <div>
-            <dt className="text-gray-500">Status</dt>
-            <dd className="text-gray-900">
+            <dt className="text-ink-light">Status</dt>
+            <dd className="text-ink-dark">
               {selectedEvermark.verified ? (
-                <span className="text-green-600">Verified</span>
+                <span className="text-green-600 font-serif">Verified</span>
               ) : (
-                <span className="text-gray-500">Not Verified</span>
+                <span className="text-ink-light font-serif">Not Verified</span>
               )}
             </dd>
           </div>

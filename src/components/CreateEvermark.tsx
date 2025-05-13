@@ -1,3 +1,4 @@
+// src/components/CreateEvermark.tsx
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useEvermarks } from '../hooks/useEvermarks';
@@ -100,19 +101,19 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
 
   if (!isAuthenticated) {
     return (
-      <div className="text-center py-12 bg-white rounded-lg shadow">
-        <p className="text-gray-600">Please sign in to create an evermark.</p>
+      <div className="text-center py-12 bg-parchment-light rounded-lg shadow">
+        <p className="text-ink-light font-serif">Please sign in to create an evermark.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">Create Evermark</h2>
+    <div className="max-w-2xl mx-auto">
+      <h2 className="text-2xl font-serif font-bold text-ink-dark mb-6">Add to the Library Collection</h2>
       
       {/* URL Input with Auto-Detect */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
           Source URL (optional)
         </label>
         <div className="flex gap-2">
@@ -120,16 +121,16 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
             type="url"
             value={sourceUrl}
             onChange={(e) => setSourceUrl(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
             placeholder="https://example.com/article"
           />
           <button
             type="button"
             onClick={handleAutoDetect}
             disabled={!sourceUrl || autoDetecting}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-brass text-ink-dark rounded-md hover:bg-brass-dark disabled:opacity-50 font-serif shadow-sm"
           >
-            {autoDetecting ? 'Detecting...' : 'Auto-Detect'}
+            {autoDetecting ? 'Searching...' : 'Auto-Detect'}
           </button>
         </div>
       </div>
@@ -137,13 +138,13 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Content Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
             Content Type
           </label>
           <select
             value={contentType}
             onChange={(e) => setContentType(e.target.value as ContentType)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif appearance-none"
           >
             <option value={ContentType.WEBSITE}>Website</option>
             <option value={ContentType.ARTICLE}>Article</option>
@@ -157,8 +158,8 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
 
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Title *
+          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
+            Title <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -166,35 +167,38 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
             value={formData.title}
             onChange={handleInputChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
+            placeholder="Enter the title of this content"
           />
         </div>
 
         {/* Author */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
             Author
           </label>
           <input
             type="text"
             name="author"
-            value={formData.author}
+            value={formData.author || ''}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
+            placeholder="Who created this content?"
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
             Description
           </label>
           <textarea
             name="description"
-            value={formData.description}
+            value={formData.description || ''}
             onChange={handleInputChange}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
+            placeholder="Briefly describe why this is worth preserving"
           />
         </div>
 
@@ -202,7 +206,7 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
         {contentType === ContentType.BOOK && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
                 ISBN
               </label>
               <input
@@ -210,11 +214,12 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
                 name="isbn"
                 value={formData.isbn || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
+                placeholder="Enter ISBN number"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
                 Publisher
               </label>
               <input
@@ -222,7 +227,8 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
                 name="publisher"
                 value={formData.publisher || ''}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
+                placeholder="Publisher name"
               />
             </div>
           </>
@@ -230,7 +236,7 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
 
         {contentType === ContentType.ARTICLE && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
               DOI
             </label>
             <input
@@ -238,33 +244,35 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
               name="doi"
               value={formData.doi || ''}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
+              placeholder="Digital Object Identifier (if available)"
             />
           </div>
         )}
 
         {/* Tags */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
             Tags (comma-separated)
           </label>
           <input
             type="text"
             value={formData.tags?.join(', ') || ''}
             onChange={handleTagsChange}
-            placeholder="tag1, tag2, tag3"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="history, science, literature, etc."
+            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
           />
+          <p className="mt-1 text-xs text-ink-light font-serif">Separate tags with commas</p>
         </div>
 
         {/* Submit */}
         <div className="pt-4">
           <button
             type="submit"
-            disabled={creating || !isAuthenticated}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={creating || !isAuthenticated || !formData.title}
+            className="w-full px-6 py-3 bg-wood text-parchment-light rounded-md hover:bg-wood-dark disabled:opacity-50 disabled:cursor-not-allowed font-serif font-medium shadow-md transition-colors"
           >
-            {creating ? 'Creating Evermark...' : 'Create Evermark'}
+            {creating ? 'Creating Evermark...' : 'Add to Library Collection'}
           </button>
         </div>
       </form>

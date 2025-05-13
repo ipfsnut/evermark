@@ -15,12 +15,7 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({ evermark }) => {
       className="block transform transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
     >
       <div 
-        className="relative h-full rounded-lg shadow overflow-hidden"
-        style={{ 
-          backgroundImage: 'url("/textures/index-card.png")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
+        className="relative h-full rounded-lg shadow overflow-hidden bg-index-card"
       >
         {/* Content type tab */}
         <div 

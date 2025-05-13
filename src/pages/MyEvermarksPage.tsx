@@ -9,7 +9,8 @@ import {
   VoteIcon, 
   TrendingUpIcon, 
   ExternalLinkIcon,
-  CircleIcon 
+  BookOpenIcon,
+  PlusIcon
 } from 'lucide-react';
 
 const MyEvermarksPage: React.FC = () => {
@@ -40,10 +41,10 @@ const MyEvermarksPage: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="text-center py-12">
-        <CircleIcon className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-2 text-sm font-medium text-gray-900">Not authenticated</h3>
-        <p className="mt-1 text-sm text-gray-500">
+      <div className="text-center py-12 bg-parchment-texture rounded-lg border border-wood-light">
+        <BookOpenIcon className="mx-auto h-12 w-12 text-wood opacity-60 mb-3" />
+        <h3 className="mt-2 text-lg font-serif font-medium text-ink-dark">Not authenticated</h3>
+        <p className="mt-2 text-sm font-serif text-ink-light">
           Please connect your wallet to view your evermarks.
         </p>
       </div>
@@ -52,8 +53,8 @@ const MyEvermarksPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center items-center min-h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-wood"></div>
       </div>
     );
   }
@@ -63,51 +64,50 @@ const MyEvermarksPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Evermarks</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Manage and track your created evermarks
+          <h1 className="text-3xl font-serif font-bold text-ink-dark">My Collection</h1>
+          <p className="mt-2 text-sm font-serif text-ink-light">
+            Manage your personal library of preserved content
           </p>
         </div>
         <Link
           to="/create"
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          className="flex items-center px-4 py-2 bg-wood text-parchment-light rounded-md hover:bg-wood-dark transition-colors shadow-md font-serif"
         >
-          <BookmarkIcon className="w-4 h-4 mr-2" />
-          Create New
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Add New Item
         </Link>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-parchment-texture rounded-lg shadow p-6 border border-wood-light">
           <div className="flex items-center">
-            <BookmarkIcon className="h-8 w-8 text-blue-600" />
+            <BookmarkIcon className="h-8 w-8 text-brass" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Total Evermarks</p>
-              <p className="text-2xl font-bold text-gray-900">{userEvermarks.length}</p>
+              <p className="text-sm font-serif font-medium text-ink-light">Total Evermarks</p>
+              <p className="text-2xl font-serif font-bold text-ink-dark">{userEvermarks.length}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-parchment-texture rounded-lg shadow p-6 border border-wood-light">
           <div className="flex items-center">
-            <VoteIcon className="h-8 w-8 text-purple-600" />
+            <VoteIcon className="h-8 w-8 text-brass" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Voting Power</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-serif font-medium text-ink-light">Voting Power</p>
+              <p className="text-2xl font-serif font-bold text-ink-dark">
                 {formatEther(balances.votingPower)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-parchment-texture rounded-lg shadow p-6 border border-wood-light">
           <div className="flex items-center">
-            <TrendingUpIcon className="h-8 w-8 text-green-600" />
+            <TrendingUpIcon className="h-8 w-8 text-brass" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Total Votes Received</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {/* You'd need to calculate this from your evermarks */}
+              <p className="text-sm font-serif font-medium text-ink-light">Total Votes Received</p>
+              <p className="text-2xl font-serif font-bold text-ink-dark">
                 {userEvermarks.reduce((sum, e) => sum + (e.metadata?.totalVotes || 0), 0)}
               </p>
             </div>
@@ -120,7 +120,7 @@ const MyEvermarksPage: React.FC = () => {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as any)}
-          className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="rounded-md border-wood-light shadow-sm focus:border-brass focus:ring-brass bg-parchment font-serif text-sm"
         >
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
@@ -130,53 +130,53 @@ const MyEvermarksPage: React.FC = () => {
 
       {/* Evermarks List */}
       {error ? (
-        <div className="text-center py-8 text-red-600">
+        <div className="text-center py-8 text-red-600 font-serif">
           Failed to load your evermarks. Please try again.
         </div>
       ) : sortedEvermarks.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <CircleIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">No evermarks yet</h3>
-          <p className="mt-2 text-sm text-gray-600">
+        <div className="text-center py-12 bg-parchment-texture rounded-lg border border-wood-light">
+          <BookOpenIcon className="mx-auto h-12 w-12 text-wood opacity-60 mb-4" />
+          <h3 className="text-lg font-serif font-medium text-ink-dark">Your Collection is Empty</h3>
+          <p className="mt-2 text-sm font-serif text-ink-light">
             Start preserving your favorite content by creating your first evermark.
           </p>
           <Link
             to="/create"
-            className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="mt-4 inline-flex items-center px-4 py-2 bg-wood text-parchment-light rounded-md hover:bg-wood-dark transition-colors shadow-md font-serif"
           >
-            <BookmarkIcon className="w-4 h-4 mr-2" />
+            <PlusIcon className="w-4 h-4 mr-2" />
             Create Your First Evermark
           </Link>
         </div>
       ) : (
         <div className="space-y-4">
           {sortedEvermarks.map((evermark) => (
-            <div key={evermark.id} className="bg-white rounded-lg shadow overflow-hidden">
+            <div key={evermark.id} className="bg-index-card rounded-lg shadow overflow-hidden border border-wood-light">
               <div className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <Link 
                       to={`/evermark/${evermark.id}`}
-                      className="text-lg font-semibold text-gray-900 hover:text-blue-600"
+                      className="text-lg font-serif font-semibold text-ink-dark hover:text-brass"
                     >
                       {evermark.title}
                     </Link>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm font-serif text-ink-light mt-1">
                       Created on {new Date(evermark.createdAt).toLocaleDateString()}
                     </p>
-                    <p className="text-gray-600 mt-2 line-clamp-2">
+                    <p className="text-ink-dark font-serif mt-2 line-clamp-2">
                       {evermark.description}
                     </p>
                     
                     <div className="flex items-center gap-4 mt-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-serif bg-parchment text-ink-dark border border-wood-light">
                         {evermark.metadata?.type || 'website'}
                       </span>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm font-serif text-ink-light">
                         by {evermark.author}
                       </span>
                       {evermark.verified && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-serif bg-green-100 text-green-800">
                           Verified
                         </span>
                       )}
@@ -184,7 +184,7 @@ const MyEvermarksPage: React.FC = () => {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm font-serif text-ink-light">
                       {evermark.metadata?.totalVotes || 0} votes
                     </span>
                     {evermark.metadata?.external_url && (
@@ -192,7 +192,7 @@ const MyEvermarksPage: React.FC = () => {
                         href={evermark.metadata.external_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                        className="p-2 text-brass hover:text-brass-dark transition-colors"
                       >
                         <ExternalLinkIcon className="w-4 h-4" />
                       </a>

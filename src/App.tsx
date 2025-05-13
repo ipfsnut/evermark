@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { config } from "./wagmi";
-import { Layout } from "./components/layout/Layout";
+import { LibraryLayout } from "./components/layout/LibraryLayout";
 import HomePage from "./pages/HomePage";
 import CreateEvermarkPage from "./pages/CreateEvermarkPage";
 import MyEvermarksPage from "./pages/MyEvermarksPage";
@@ -35,7 +35,7 @@ function App() {
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
           <Router>
-            <Layout>
+            <LibraryLayout>
               <Routes>
                 <Route path="/" element={
                   <ErrorBoundary component="HomePage">
@@ -63,7 +63,7 @@ function App() {
                   </ErrorBoundary>
                 } />
               </Routes>
-            </Layout>
+            </LibraryLayout>
             
             {/* Test Console - only shown in development */}
             {process.env.NODE_ENV === 'development' && <TestConsole />}
