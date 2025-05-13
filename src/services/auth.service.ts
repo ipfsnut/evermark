@@ -76,6 +76,35 @@ export class AuthService {
   }
 
   /**
+   * Create a new blockchain session without requiring a signature
+   * This uses just the wallet address as authentication
+   */
+  async createBlockchainSessionNoSignature(walletAddress: string): Promise<Session> {
+    // Generate a unique ID for the user (shortened wallet + random)
+    const userId = `${walletAddress.slice(2, 10)}-${Math.random().toString(36).substring(2, 10)}`;
+    
+    // Generate a session token
+    const token = uuidv4();
+    
+    // Calculate expiration date
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + AUTH_CONSTANTS.SESSION_DURATION_DAYS);
+    
+    // Create session
+    const session: Session = {
+      userId,
+      token,
+      walletAddress,
+      expiresAt: expiresAt.toISOString()
+    };
+    
+    // Store in localStorage
+    this.storeSession(session);
+    
+    return session;
+  }
+
+  /**
    * Create a new blockchain-only session
    * Since there's no DB, we just use localStorage and the wallet address as ID
    */
@@ -150,6 +179,25 @@ export class AuthService {
       return await signer.signMessage(message);
     } catch (error: any) {
       throw new Error(`Failed to sign message: ${error.message}`);
+    }
+  }
+
+  /**
+   * Sign message directly with ethers.js
+   * This is a fallback for when wagmi's method doesn't work
+   */
+  async signMessageDirectly(message: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error('No wallet detected');
+    }
+    
+    try {
+      const { ethers } = await import('ethers');
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      return await signer.signMessage(message);
+    } catch (error: any) {
+      throw new Error(`Failed to sign message directly: ${error.message}`);
     }
   }
 

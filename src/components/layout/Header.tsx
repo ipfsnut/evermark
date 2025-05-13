@@ -1,25 +1,28 @@
+// src/components/layout/Header.tsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ConnectButton } from '../auth/ConnectButton';
-
-const navigation = [
-  { name: 'Browse', href: '/' },
-  { name: 'Create', href: '/create' },
-  { name: 'My Evermarks', href: '/my-evermarks' },
-  { name: 'Profile', href: '/profile' },
-];
+import { BookOpenIcon } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
+  const navigation = [
+    { name: 'Browse', href: '/' },
+    { name: 'Create', href: '/create' },
+    { name: 'My Evermarks', href: '/my-evermarks' },
+    { name: 'Profile', href: '/profile' },
+  ];
+
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
+    <header style={{ backgroundColor: '#5a4331' }} className="shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <h1 className="text-2xl font-bold text-gray-900">
+            <BookOpenIcon style={{ color: '#c4a55f' }} className="h-8 w-8" />
+            <h1 style={{ color: '#f5f1e4', fontFamily: 'Georgia, serif' }} className="text-2xl font-bold ml-2">
               Evermark
             </h1>
           </Link>
@@ -30,11 +33,11 @@ export const Header: React.FC = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`text-sm font-medium transition-colors ${
-                  isActive(item.href)
-                    ? 'text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                style={{ 
+                  color: isActive(item.href) ? '#c4a55f' : '#f5f1e4',
+                  fontFamily: 'Georgia, serif'
+                }}
+                className="text-sm font-medium"
               >
                 {item.name}
               </Link>
@@ -47,25 +50,25 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Mobile Navigation */}
-      <nav className="md:hidden border-t bg-white">
+      <div className="md:hidden border-t" style={{ backgroundColor: '#7d5f45' }}>
         <div className="max-w-7xl mx-auto px-4 py-2">
           <div className="flex justify-around">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`text-xs font-medium transition-colors ${
-                  isActive(item.href)
-                    ? 'text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                style={{ 
+                  color: isActive(item.href) ? '#c4a55f' : '#f5f1e4',
+                  fontFamily: 'Georgia, serif'
+                }}
+                className="text-xs font-medium"
               >
                 {item.name}
               </Link>
             ))}
           </div>
         </div>
-      </nav>
+      </div>
     </header>
   );
 };
