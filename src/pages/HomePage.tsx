@@ -47,10 +47,10 @@ const HomePage: React.FC = () => {
       {/* Hero Section */}
       <div className="text-center py-12 bg-parchment-texture border border-wood-light rounded-lg shadow-md">
         <BookOpenIcon className="mx-auto h-16 w-16 text-brass mb-4" />
-        <h1 className="text-4xl font-serif font-bold text-ink-dark mb-4">
+        <h1 className="text-responsive-title text-ink-dark mb-2 animate-text-in">
           Welcome to Evermark Library
         </h1>
-        <p className="text-xl text-ink-light mb-8 max-w-2xl mx-auto font-serif">
+        <p className="text-responsive-body text-ink-light mb-8 max-w-2xl mx-auto animate-text-in" style={{animationDelay: "0.1s"}}>
           Preserve and catalogue your favorite content from across the internet.
         </p>
         
@@ -99,8 +99,8 @@ const HomePage: React.FC = () => {
       {recentEvermarks.length === 0 && (
         <div className="text-center py-12 bg-parchment-texture border border-wood-light rounded-lg">
           <BookOpenIcon className="mx-auto h-12 w-12 text-wood opacity-60 mb-4" />
-          <h3 className="text-lg font-serif font-medium text-ink-dark">The Library is Empty</h3>
-          <p className="mt-2 font-serif text-ink-light max-w-md mx-auto">
+          <h3 className="text-responsive-card-title text-ink-dark">The Library is Empty</h3>
+          <p className="mt-2 font-serif text-ink-light max-w-md mx-auto leading-relaxed">
             No evermarks have been catalogued yet. Be the first to preserve valuable content for the library.
           </p>
           {isAuthenticated && (

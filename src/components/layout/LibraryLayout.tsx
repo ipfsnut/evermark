@@ -5,7 +5,7 @@ import { ConnectButton } from '../auth/ConnectButton';
 import { 
   BookOpenIcon, 
   BookmarkIcon, 
-  PlusCircleIcon, 
+  PlusIcon, 
   UserIcon, 
   HomeIcon,
   MenuIcon,
@@ -21,83 +21,47 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
   const location = useLocation();
   
   const navigation = [
-    { name: 'Browse Catalog', href: '/', icon: HomeIcon },
-    { name: 'Create Entry', href: '/create', icon: PlusCircleIcon },
-    { name: 'My Collection', href: '/my-evermarks', icon: BookmarkIcon },
-    { name: 'Librarian Profile', href: '/profile', icon: UserIcon },
+    { name: 'Browse', href: '/', icon: HomeIcon },
+    { name: 'Create', href: '/create', icon: PlusIcon },
+    { name: 'My Evermarks', href: '/my-evermarks', icon: BookmarkIcon },
+    { name: 'Profile', href: '/profile', icon: UserIcon },
   ];
   
   const isActive = (path: string) => location.pathname === path;
   
   return (
-    <div className="min-h-screen flex flex-col bg-wood-texture">
-      {/* Header - Library Shelf */}
-      <header className="bg-wood-dark border-b border-wood-light shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            {/* Logo and Title */}
-            <div className="flex items-center">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="md:hidden mr-2 p-2 text-parchment-light"
-              >
-                <MenuIcon className="h-6 w-6" />
-              </button>
+    <div className="min-h-screen bg-parchment-light">
+      {/* Collapsible sidebar for both mobile and desktop */}
+      <div className={`fixed inset-0 z-40 ${sidebarOpen ? 'block' : 'hidden'}`}>
+        {/* Overlay */}
+        <div 
+          className="fixed inset-0 bg-ink-dark bg-opacity-75" 
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        ></div>
+        
+        {/* Sidebar */}
+        <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-wood-texture shadow-xl">
+          <div className="h-full flex flex-col py-6 bg-wood bg-opacity-95">
+            {/* Close button and logo */}
+            <div className="px-4 flex items-center justify-between">
               <Link to="/" className="flex items-center">
                 <BookOpenIcon className="h-8 w-8 text-brass" />
-                <h1 className="ml-2 text-2xl font-serif font-bold text-parchment-light">
+                <h1 className="ml-2 text-xl font-serif font-bold text-parchment-light">
                   Evermark
                 </h1>
               </Link>
-              <div className="hidden md:flex ml-10 items-center space-x-4">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`px-3 py-2 text-sm font-medium rounded-md ${
-                      isActive(item.href)
-                        ? 'bg-wood-light text-parchment'
-                        : 'text-parchment-light hover:bg-wood opacity-80'
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-            
-            {/* Connect Button */}
-            <div className="flex items-center">
-              <div className="ml-4 flex items-center md:ml-6">
-                <ConnectButton />
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-      
-      {/* Mobile Sidebar */}
-      <div className={`md:hidden fixed inset-0 z-40 ${sidebarOpen ? 'block' : 'hidden'}`}>
-        {/* Overlay */}
-        <div className="fixed inset-0 bg-ink-dark bg-opacity-75" onClick={() => setSidebarOpen(false)}></div>
-        
-        {/* Sidebar Panel */}
-        <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-wood-grain shadow-xl">
-          <div className="h-full flex flex-col py-6 bg-wood bg-opacity-95">
-            <div className="px-4 flex items-center justify-between">
-              <div className="flex items-center">
-                <BookOpenIcon className="h-8 w-8 text-brass" />
-                <h2 className="ml-2 text-xl font-serif font-bold text-parchment-light">
-                  Evermark
-                </h2>
-              </div>
               <button
+                type="button"
+                className="text-parchment-light hover:text-parchment focus:outline-none"
                 onClick={() => setSidebarOpen(false)}
-                className="text-parchment-light hover:text-parchment"
               >
                 <XIcon className="h-6 w-6" />
+                <span className="sr-only">Close sidebar</span>
               </button>
             </div>
+            
+            {/* Navigation */}
             <div className="mt-6 flex-1 px-4">
               <nav className="space-y-1">
                 {navigation.map((item) => (
@@ -107,7 +71,7 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
                     className={`group flex items-center px-3 py-2 text-base font-medium rounded-md ${
                       isActive(item.href)
                         ? 'bg-wood-light text-parchment'
-                        : 'text-parchment-light hover:bg-wood opacity-80'
+                        : 'text-parchment-light hover:bg-wood hover:text-parchment'
                     }`}
                     onClick={() => setSidebarOpen(false)}
                   >
@@ -121,22 +85,49 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
         </div>
       </div>
       
-      {/* Main Content */}
-      <div className="py-6 flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Library Desk */}
-          <div className="bg-parchment-texture rounded-lg shadow-inner p-6 sm:p-8 border border-wood-dark">
-            {children}
+      {/* Main content wrapper - no left padding needed since sidebar is hidden by default */}
+      <div className="flex flex-col min-h-screen">
+        {/* Header - with menu button visible on all screen sizes */}
+        <header className="sticky top-0 z-20 bg-wood-dark border-b border-wood-light shadow-md">
+          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            {/* Menu button - visible on all screen sizes */}
+            <div className="flex items-center">
+              <button
+                type="button"
+                className="text-parchment-light hover:text-parchment focus:outline-none"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <MenuIcon className="h-6 w-6" />
+                <span className="sr-only">Open sidebar</span>
+              </button>
+              
+              {/* Title next to menu button */}
+              <Link to="/" className="ml-3 text-parchment-light hover:text-parchment transition-colors font-serif">
+                Evermark Library
+              </Link>
+            </div>
+            
+            {/* Connect Button */}
+            <ConnectButton />
           </div>
-        </div>
+        </header>
+        
+        {/* Main content */}
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-parchment-texture rounded-lg shadow-inner p-6 sm:p-8 border border-wood-light">
+              {children}
+            </div>
+          </div>
+        </main>
+        
+        {/* Footer */}
+        <footer className="bg-wood-dark border-t border-wood-light mt-auto">
+          <div className="max-w-7xl mx-auto px-4 py-6 text-center text-parchment-light text-sm font-serif">
+            © 2025 Evermark Library. All rights reserved.
+          </div>
+        </footer>
       </div>
-      
-      {/* Footer */}
-      <footer className="bg-wood-dark border-t border-wood-light mt-auto">
-        <div className="max-w-7xl mx-auto px-4 py-6 text-center text-parchment-light text-sm font-serif">
-          © 2025 Evermark Library. All rights reserved.
-        </div>
-      </footer>
     </div>
   );
 };

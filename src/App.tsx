@@ -62,6 +62,17 @@ function App() {
                     <ProfilePage />
                   </ErrorBoundary>
                 } />
+                {/* Add a search route */}
+                <Route path="/search" element={
+                  <ErrorBoundary component="SearchPage">
+                    <div className="py-12 text-center">
+                      <h1 className="text-responsive-title text-ink-dark mb-4">Search Archives</h1>
+                      <p className="text-ink-light font-serif text-lg">
+                        Search functionality coming soon...
+                      </p>
+                    </div>
+                  </ErrorBoundary>
+                } />
               </Routes>
             </LibraryLayout>
             

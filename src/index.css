@@ -11,6 +11,26 @@
     /* Change from gray-50 to our custom parchment-light color */
     @apply bg-parchment-light text-ink-dark;
   }
+  
+  /* Modern typography improvements */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight leading-tight;
+  }
+  
+  /* Modern serif for headings, sans-serif for body */
+  h1, h2, h3, h4 {
+    @apply font-serif font-bold;
+  }
+  
+  /* Improve body text readability */
+  p, span, div {
+    @apply leading-relaxed tracking-wide;
+  }
+  
+  /* Consistent link styling */
+  a {
+    @apply transition-colors duration-200;
+  }
 }
 
 /* Texture backgrounds */
@@ -35,12 +55,14 @@
   background-image: url('/textures/parchment.jpg');
   background-size: cover;
   background-position: center;
+  position: relative;
 }
 
 .bg-paper-texture {
   background-color: #efe8d7;
   background-image: linear-gradient(#e5dbc1 1px, transparent 1px), linear-gradient(to right, #e5dbc1 1px, #efe8d7 1px);
   background-size: 20px 20px;
+  position: relative;
 }
 
 /* Add index card style */
@@ -48,6 +70,7 @@
   background-image: url('/textures/index-card.png');
   background-size: cover;
   background-position: center;
+  position: relative;
 }
 
 /* Add notebook paper texture */
@@ -55,6 +78,24 @@
   background-image: url('/textures/notebook-paper.jpg');
   background-size: cover;
   background-position: top center;
+  position: relative;
+}
+
+/* Improve text contrast over textured backgrounds */
+.bg-parchment-texture > *,
+.bg-wood-texture > *,
+.bg-index-card > *,
+.bg-notebook-paper > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Add subtle text shadow for better readability on textured backgrounds */
+.bg-parchment-texture h1,
+.bg-parchment-texture h2,
+.bg-wood-texture h1,
+.bg-wood-texture h2 {
+  text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Page turning animation */
@@ -73,4 +114,58 @@
   animation: page-turn 0.5s ease-out forwards;
   transform-origin: left center;
   perspective: 1000px;
+}
+
+/* Subtle text fade-in animation */
+@keyframes text-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-text-in {
+  animation: text-fade-in 0.5s ease-out forwards;
+}
+
+/* Add responsive typography */
+@layer utilities {
+  .text-responsive-title {
+    @apply text-3xl md:text-4xl lg:text-5xl font-serif font-bold tracking-tight;
+  }
+  
+  .text-responsive-body {
+    @apply text-base md:text-lg leading-relaxed font-serif;
+  }
+  
+  .text-responsive-card-title {
+    @apply text-lg md:text-xl font-serif font-medium tracking-tight;
+  }
+}
+
+/* Better text on wood backgrounds */
+.bg-wood-texture a,
+.bg-wood-dark a,
+.bg-wood a {
+  @apply text-parchment-light hover:text-parchment transition-colors duration-200;
+}
+
+.bg-wood-texture h1,
+.bg-wood-texture h2,
+.bg-wood-texture h3,
+.bg-wood-dark h1,
+.bg-wood-dark h2,
+.bg-wood-dark h3 {
+  @apply text-parchment;
+}
+
+/* Improve card styling */
+.evermark-card {
+  @apply bg-index-card rounded-lg shadow-sm border border-wood-light p-4 transition-shadow duration-300 hover:shadow-md;
+}
+
+.evermark-card h3 {
+  @apply font-serif font-bold text-lg text-ink-dark mb-2;
+}
+
+.evermark-card p {
+  @apply font-serif text-sm text-ink-light leading-relaxed;
 }
