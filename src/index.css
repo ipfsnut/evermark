@@ -40,6 +40,7 @@
   position: relative;
 }
 
+/* Add glowing accent in overlay */
 .bg-wood-texture::after {
   content: '';
   position: absolute;
@@ -47,7 +48,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(125, 95, 69, 0.3); /* Wood color with transparency */
+  background: linear-gradient(135deg, rgba(130, 82, 228, 0.1) 0%, rgba(125, 95, 69, 0.3) 100%);
   pointer-events: none;
 }
 
@@ -58,6 +59,18 @@
   position: relative;
 }
 
+/* Add subtle purple tint to parchment */
+.bg-parchment-texture::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, rgba(130, 82, 228, 0.03), transparent);
+  pointer-events: none;
+}
+
 .bg-paper-texture {
   background-color: #efe8d7;
   background-image: linear-gradient(#e5dbc1 1px, transparent 1px), linear-gradient(to right, #e5dbc1 1px, #efe8d7 1px);
@@ -65,20 +78,58 @@
   position: relative;
 }
 
-/* Add index card style */
+/* Add index card style with modern touch */
 .bg-index-card {
   background-image: url('/textures/index-card.png');
   background-size: cover;
   background-position: center;
   position: relative;
+  transition: all 0.2s ease-in-out;
 }
 
-/* Add notebook paper texture */
+/* Add purple glow on hover */
+.bg-index-card:hover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(130, 82, 228, 0.05) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Add notebook paper texture with purple accent */
 .bg-notebook-paper {
   background-image: url('/textures/notebook-paper.jpg');
   background-size: cover;
   background-position: top center;
   position: relative;
+}
+
+.bg-notebook-paper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background-color: rgba(130, 82, 228, 0.5);
+  pointer-events: none;
+}
+
+/* Glass effect utilities */
+.glass-effect {
+  @apply bg-opacity-20 backdrop-filter backdrop-blur-sm bg-clip-padding backdrop-saturate-150;
+}
+
+/* Warpcast glow utilities */
+.warpcast-glow {
+  box-shadow: 0 0 15px rgba(130, 82, 228, 0.3);
+}
+
+.warpcast-glow-sm {
+  box-shadow: 0 0 8px rgba(130, 82, 228, 0.2);
 }
 
 /* Improve text contrast over textured backgrounds */
@@ -90,76 +141,9 @@
   z-index: 2;
 }
 
-/* Add subtle text shadow for better readability on textured backgrounds */
-.bg-parchment-texture h1,
-.bg-parchment-texture h2,
-.bg-wood-texture h1,
-.bg-wood-texture h2 {
-  text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-/* Page turning animation */
-@keyframes page-turn {
-  0% {
-    transform: rotateY(0deg);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  }
-  100% {
-    transform: rotateY(-2deg);
-    box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.2);
-  }
-}
-
-.page-turn-effect {
-  animation: page-turn 0.5s ease-out forwards;
-  transform-origin: left center;
-  perspective: 1000px;
-}
-
-/* Subtle text fade-in animation */
-@keyframes text-fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-text-in {
-  animation: text-fade-in 0.5s ease-out forwards;
-}
-
-/* Add responsive typography */
-@layer utilities {
-  .text-responsive-title {
-    @apply text-3xl md:text-4xl lg:text-5xl font-serif font-bold tracking-tight;
-  }
-  
-  .text-responsive-body {
-    @apply text-base md:text-lg leading-relaxed font-serif;
-  }
-  
-  .text-responsive-card-title {
-    @apply text-lg md:text-xl font-serif font-medium tracking-tight;
-  }
-}
-
-/* Better text on wood backgrounds */
-.bg-wood-texture a,
-.bg-wood-dark a,
-.bg-wood a {
-  @apply text-parchment-light hover:text-parchment transition-colors duration-200;
-}
-
-.bg-wood-texture h1,
-.bg-wood-texture h2,
-.bg-wood-texture h3,
-.bg-wood-dark h1,
-.bg-wood-dark h2,
-.bg-wood-dark h3 {
-  @apply text-parchment;
-}
-
-/* Improve card styling */
+/* Improve card styling with modern touch */
 .evermark-card {
-  @apply bg-index-card rounded-lg shadow-sm border border-wood-light p-4 transition-shadow duration-300 hover:shadow-md;
+  @apply bg-index-card rounded-lg shadow-sm border border-wood-light p-4 transition-all duration-300 hover:shadow-md hover:warpcast-glow-sm;
 }
 
 .evermark-card h3 {
@@ -168,4 +152,31 @@
 
 .evermark-card p {
   @apply font-serif text-sm text-ink-light leading-relaxed;
+}
+
+/* Techno-parchment style for content containers */
+.techno-parchment {
+  @apply bg-parchment-texture border border-warpcast/20 rounded-lg shadow-lg relative overflow-hidden;
+}
+
+.techno-parchment::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40%;
+  height: 5px;
+  background: linear-gradient(to right, transparent, rgba(130, 82, 228, 0.5));
+  pointer-events: none;
+}
+
+/* Animated highlight for active elements */
+@keyframes warpcast-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(130, 82, 228, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(130, 82, 228, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(130, 82, 228, 0); }
+}
+
+.warpcast-pulse {
+  animation: warpcast-pulse 2s infinite;
 }

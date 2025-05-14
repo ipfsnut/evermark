@@ -32,6 +32,11 @@ module.exports = {
           DEFAULT: '#2a5234',
           dark: '#1e3d26',
         },
+        warpcast: {
+          light: '#9d7dea',
+          DEFAULT: '#8252e4',
+          dark: '#6836cc',
+        },
       },
       fontFamily: {
         serif: ['Bookman Old Style', 'Bookman', 'Palatino', 'Georgia', 'serif'],
