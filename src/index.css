@@ -2,181 +2,340 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  html {
-    font-family: Inter, system-ui, sans-serif;
+/* Base theme settings */
+:root {
+  --color-text-light: #333333;
+  --color-text-dark: #f0f0f0;
+  --color-bg-light: #f5f5f0;
+  --color-bg-dark: #222222;
+  --color-primary: #6200ee;
+  --color-primary-light: #8a3df8;
+  --color-border-light: #dddddd;
+  --color-border-dark: #444444;
+}
+
+/* Basic reset and font settings */
+body {
+  @apply font-sans antialiased;
+  background-color: var(--color-bg-light);
+  color: var(--color-text-light);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode {
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-dark);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-medium leading-tight;
+}
+
+/* Texture components */
+@layer components {
+  /* Wood grain menu background */
+  .bg-wood-texture {
+    background-image: url('/textures/wood-grain.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+
+  .bg-wood-texture::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 0;
+  }
+
+  .bg-wood-texture > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Notebook paper for forms */
+  .bg-notebook-paper {
+    background-image: url('/textures/notebook-paper.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+
+  .bg-notebook-paper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    z-index: 0;
+  }
+
+  .bg-notebook-paper > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Parchment for profile and collections */
+  .bg-parchment {
+    background-image: url('/textures/parchment.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+
+  .bg-parchment::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.5);
+    z-index: 0;
+  }
+
+  .bg-parchment > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Index card for evermarks */
+  .bg-index-card {
+    background-image: url('/textures/index-card.png');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+
+  .dark-mode .bg-index-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.1);
+    z-index: 0;
+  }
+
+  .bg-index-card > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Form elements */
+input, textarea, select {
+  @apply w-full px-3 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent;
+  min-height: 44px; /* Better touch targets */
+}
+
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select {
+  @apply bg-gray-800 border-gray-700 text-gray-100;
+}
+
+/* Buttons */
+.btn {
+  @apply px-4 py-2 rounded font-medium transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
+}
+
+.btn-primary {
+  @apply bg-purple-700 text-white hover:bg-purple-800;
+}
+
+.btn-secondary {
+  @apply bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-100;
+}
+
+.dark-mode .btn-secondary {
+  @apply border-gray-600 text-gray-200 hover:bg-gray-800;
+}
+
+.btn-icon {
+  @apply p-2 rounded-full;
+}
+
+/* Card layouts for evermark items */
+.card {
+  @apply rounded-lg overflow-hidden shadow transition-all duration-200;
+}
+
+.card:hover {
+  @apply shadow-md transform -translate-y-1;
+}
+
+/* Mobile-friendly containers */
+.container-center {
+  @apply mx-auto px-4 max-w-screen-lg;
+}
+
+.content-area {
+  @apply p-4 md:p-6 lg:p-8;
+}
+
+/* Menu styling */
+.menu-link {
+  @apply flex items-center px-4 py-3 text-gray-100 rounded-md transition-colors duration-200;
+}
+
+.menu-link:hover {
+  @apply bg-white bg-opacity-10;
+}
+
+.menu-link.active {
+  @apply bg-purple-800 bg-opacity-60;
+}
+
+.menu-link-icon {
+  @apply mr-3 w-5 h-5;
+}
+
+/* Dark mode toggle */
+.dark-mode-toggle {
+  @apply p-2 rounded-full focus:outline-none transition-colors duration-200;
+}
+
+.dark-mode .dark-mode-toggle {
+  @apply bg-gray-700 text-yellow-300;
+}
+
+.light-mode .dark-mode-toggle {
+  @apply bg-gray-200 text-gray-700;
+}
+
+/* Responsive text utilities */
+.text-responsive-title {
+  @apply text-2xl md:text-3xl lg:text-4xl font-bold;
+}
+
+.text-responsive-subtitle {
+  @apply text-xl md:text-2xl font-medium;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Add additional spacing for mobile touch friendliness */
+@media (max-width: 768px) {
+  .touch-friendly {
+    @apply space-y-4;
   }
   
-  body {
-    /* Change from gray-50 to our custom parchment-light color */
-    @apply bg-parchment-light text-ink-dark;
-  }
-  
-  /* Modern typography improvements */
-  h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight leading-tight;
-  }
-  
-  /* Modern serif for headings, sans-serif for body */
-  h1, h2, h3, h4 {
-    @apply font-serif font-bold;
-  }
-  
-  /* Improve body text readability */
-  p, span, div {
-    @apply leading-relaxed tracking-wide;
-  }
-  
-  /* Consistent link styling */
-  a {
-    @apply transition-colors duration-200;
+  .touch-friendly button,
+  .touch-friendly a {
+    @apply min-h-[44px];
   }
 }
 
-/* Texture backgrounds */
-.bg-wood-texture {
-  background-image: url('/textures/wood-grain.jpg');
-  background-size: cover;
-  position: relative;
+/* Dark mode adjustments */
+body.dark-mode {
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #a0a0a0;
+  --color-bg-primary: #121212;
+  --color-bg-secondary: #1e1e1e;
 }
 
-/* Add glowing accent in overlay */
-.bg-wood-texture::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(130, 82, 228, 0.1) 0%, rgba(125, 95, 69, 0.3) 100%);
-  pointer-events: none;
+/* Texture handling in dark mode */
+.dark-mode .bg-wood-texture {
+  filter: brightness(0.7) contrast(1.2);
 }
 
-.bg-parchment-texture {
-  background-image: url('/textures/parchment.jpg');
-  background-size: cover;
-  background-position: center;
-  position: relative;
+.dark-mode .bg-notebook-paper {
+  filter: brightness(0.8) contrast(1.1) sepia(0.2);
 }
 
-/* Add subtle purple tint to parchment */
-.bg-parchment-texture::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to right, rgba(130, 82, 228, 0.03), transparent);
-  pointer-events: none;
+.dark-mode .bg-index-card {
+  filter: brightness(0.85) sepia(0.1);
 }
 
-.bg-paper-texture {
-  background-color: #efe8d7;
-  background-image: linear-gradient(#e5dbc1 1px, transparent 1px), linear-gradient(to right, #e5dbc1 1px, #efe8d7 1px);
-  background-size: 20px 20px;
-  position: relative;
+.dark-mode .bg-parchment {
+  filter: brightness(0.75) sepia(0.2);
 }
 
-/* Add index card style with modern touch */
-.bg-index-card {
-  background-image: url('/textures/index-card.png');
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  transition: all 0.2s ease-in-out;
+/* Add this for texture containers to ensure proper contrast in dark mode */
+.dark-mode .bg-wood-texture::after {
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
-/* Add purple glow on hover */
-.bg-index-card:hover::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(130, 82, 228, 0.05) 0%, transparent 100%);
-  pointer-events: none;
+.dark-mode .bg-notebook-paper::after {
+  background-color: rgba(20, 20, 20, 0.7);
 }
 
-/* Add notebook paper texture with purple accent */
-.bg-notebook-paper {
-  background-image: url('/textures/notebook-paper.jpg');
-  background-size: cover;
-  background-position: top center;
-  position: relative;
+.dark-mode .bg-parchment::after {
+  background-color: rgba(20, 20, 20, 0.6);
 }
 
-.bg-notebook-paper::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 100%;
-  background-color: rgba(130, 82, 228, 0.5);
-  pointer-events: none;
+.dark-mode .bg-index-card::after {
+  background-color: rgba(30, 30, 30, 0.5);
 }
 
-/* Glass effect utilities */
-.glass-effect {
-  @apply bg-opacity-20 backdrop-filter backdrop-blur-sm bg-clip-padding backdrop-saturate-150;
+/* Improve text contrast in dark mode */
+.dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4 {
+  color: #ffffff;
 }
 
-/* Warpcast glow utilities */
-.warpcast-glow {
-  box-shadow: 0 0 15px rgba(130, 82, 228, 0.3);
+.dark-mode p, .dark-mode span, .dark-mode div {
+  color: #e0e0e0;
 }
 
-.warpcast-glow-sm {
-  box-shadow: 0 0 8px rgba(130, 82, 228, 0.2);
+/* Improved form styling with centering */
+.form-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
 }
 
-/* Improve text contrast over textured backgrounds */
-.bg-parchment-texture > *,
-.bg-wood-texture > *,
-.bg-index-card > *,
-.bg-notebook-paper > * {
-  position: relative;
-  z-index: 2;
+.form-container label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  text-align: left;
 }
 
-/* Improve card styling with modern touch */
-.evermark-card {
-  @apply bg-index-card rounded-lg shadow-sm border border-wood-light p-4 transition-all duration-300 hover:shadow-md hover:warpcast-glow-sm;
+.form-container input, 
+.form-container textarea, 
+.form-container select {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  text-align: left;
 }
 
-.evermark-card h3 {
-  @apply font-serif font-bold text-lg text-ink-dark mb-2;
+.form-container button {
+  min-width: 120px;
 }
 
-.evermark-card p {
-  @apply font-serif text-sm text-ink-light leading-relaxed;
+/* Center card and content layouts */
+.content-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
 }
 
-/* Techno-parchment style for content containers */
-.techno-parchment {
-  @apply bg-parchment-texture border border-warpcast/20 rounded-lg shadow-lg relative overflow-hidden;
-}
-
-.techno-parchment::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 40%;
-  height: 5px;
-  background: linear-gradient(to right, transparent, rgba(130, 82, 228, 0.5));
-  pointer-events: none;
-}
-
-/* Animated highlight for active elements */
-@keyframes warpcast-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(130, 82, 228, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(130, 82, 228, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(130, 82, 228, 0); }
-}
-
-.warpcast-pulse {
-  animation: warpcast-pulse 2s infinite;
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
