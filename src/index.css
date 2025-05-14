@@ -2,340 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base theme settings */
-:root {
-  --color-text-light: #333333;
-  --color-text-dark: #f0f0f0;
-  --color-bg-light: #f5f5f0;
-  --color-bg-dark: #222222;
-  --color-primary: #6200ee;
-  --color-primary-light: #8a3df8;
-  --color-border-light: #dddddd;
-  --color-border-dark: #444444;
-}
-
-/* Basic reset and font settings */
-body {
-  @apply font-sans antialiased;
-  background-color: var(--color-bg-light);
-  color: var(--color-text-light);
-  transition: background-color 0.3s, color 0.3s;
-}
-
-body.dark-mode {
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-dark);
-}
-
-/* Typography */
-h1, h2, h3, h4, h5, h6 {
-  @apply font-medium leading-tight;
-}
-
-/* Texture components */
-@layer components {
-  /* Wood grain menu background */
-  .bg-wood-texture {
-    background-image: url('/textures/wood-grain.jpg');
-    background-size: cover;
-    background-position: center;
-    position: relative;
-  }
-
-  .bg-wood-texture::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 0;
-  }
-
-  .bg-wood-texture > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Notebook paper for forms */
-  .bg-notebook-paper {
-    background-image: url('/textures/notebook-paper.jpg');
-    background-size: cover;
-    background-position: center;
-    position: relative;
-  }
-
-  .bg-notebook-paper::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(255, 255, 255, 0.7);
-    z-index: 0;
-  }
-
-  .bg-notebook-paper > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Parchment for profile and collections */
-  .bg-parchment {
-    background-image: url('/textures/parchment.jpg');
-    background-size: cover;
-    background-position: center;
-    position: relative;
-  }
-
-  .bg-parchment::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(255, 255, 255, 0.5);
-    z-index: 0;
-  }
-
-  .bg-parchment > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Index card for evermarks */
-  .bg-index-card {
-    background-image: url('/textures/index-card.png');
-    background-size: cover;
-    background-position: center;
-    position: relative;
-  }
-
-  .dark-mode .bg-index-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.1);
-    z-index: 0;
-  }
-
-  .bg-index-card > * {
-    position: relative;
-    z-index: 1;
-  }
-}
-
-/* Form elements */
-input, textarea, select {
-  @apply w-full px-3 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent;
-  min-height: 44px; /* Better touch targets */
-}
-
-.dark-mode input,
-.dark-mode textarea,
-.dark-mode select {
-  @apply bg-gray-800 border-gray-700 text-gray-100;
-}
-
-/* Buttons */
-.btn {
-  @apply px-4 py-2 rounded font-medium transition-colors duration-200 min-h-[44px] inline-flex items-center justify-center;
-}
-
-.btn-primary {
-  @apply bg-purple-700 text-white hover:bg-purple-800;
-}
-
-.btn-secondary {
-  @apply bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-100;
-}
-
-.dark-mode .btn-secondary {
-  @apply border-gray-600 text-gray-200 hover:bg-gray-800;
-}
-
-.btn-icon {
-  @apply p-2 rounded-full;
-}
-
-/* Card layouts for evermark items */
-.card {
-  @apply rounded-lg overflow-hidden shadow transition-all duration-200;
-}
-
-.card:hover {
-  @apply shadow-md transform -translate-y-1;
-}
-
-/* Mobile-friendly containers */
-.container-center {
-  @apply mx-auto px-4 max-w-screen-lg;
-}
-
-.content-area {
-  @apply p-4 md:p-6 lg:p-8;
-}
-
-/* Menu styling */
-.menu-link {
-  @apply flex items-center px-4 py-3 text-gray-100 rounded-md transition-colors duration-200;
-}
-
-.menu-link:hover {
-  @apply bg-white bg-opacity-10;
-}
-
-.menu-link.active {
-  @apply bg-purple-800 bg-opacity-60;
-}
-
-.menu-link-icon {
-  @apply mr-3 w-5 h-5;
-}
-
-/* Dark mode toggle */
-.dark-mode-toggle {
-  @apply p-2 rounded-full focus:outline-none transition-colors duration-200;
-}
-
-.dark-mode .dark-mode-toggle {
-  @apply bg-gray-700 text-yellow-300;
-}
-
-.light-mode .dark-mode-toggle {
-  @apply bg-gray-200 text-gray-700;
-}
-
-/* Responsive text utilities */
-.text-responsive-title {
-  @apply text-2xl md:text-3xl lg:text-4xl font-bold;
-}
-
-.text-responsive-subtitle {
-  @apply text-xl md:text-2xl font-medium;
-}
-
-/* Animation utilities */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-/* Add additional spacing for mobile touch friendliness */
-@media (max-width: 768px) {
-  .touch-friendly {
-    @apply space-y-4;
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+    transition: background-color 0.3s, color 0.3s;
   }
   
-  .touch-friendly button,
-  .touch-friendly a {
-    @apply min-h-[44px];
+  body.dark-mode {
+    @apply bg-gray-900 text-gray-100;
   }
 }
 
-/* Dark mode adjustments */
-body.dark-mode {
-  --color-text-primary: #e0e0e0;
-  --color-text-secondary: #a0a0a0;
-  --color-bg-primary: #121212;
-  --color-bg-secondary: #1e1e1e;
+@layer components {
+  /* Sidebar component */
+  .sidebar {
+    @apply fixed top-0 left-0 w-72 h-full z-40 overflow-y-auto transition-transform duration-300 ease-in-out;
+  }
+  
+  .sidebar-closed {
+    @apply -translate-x-full;
+  }
+  
+  /* Textured backgrounds */
+  .bg-wood-texture {
+    background-image: url('/textures/wood-grain.jpg');
+    @apply bg-cover bg-center relative;
+  }
+  
+  .bg-wood-texture::after {
+    content: '';
+    @apply absolute inset-0 bg-black bg-opacity-70 z-0;
+  }
+  
+  .bg-wood-texture > * {
+    @apply relative z-10;
+  }
+  
+  .bg-notebook-paper {
+    background-image: url('/textures/notebook-paper.jpg');
+    @apply bg-cover bg-center relative;
+  }
+  
+  .bg-notebook-paper::after {
+    content: '';
+    @apply absolute inset-0 bg-white bg-opacity-70 z-0;
+  }
+  
+  .dark-mode .bg-notebook-paper::after {
+    @apply bg-black bg-opacity-50;
+  }
+  
+  .bg-parchment {
+    background-image: url('/textures/parchment.jpg');
+    @apply bg-cover bg-center relative;
+  }
+  
+  .bg-index-card {
+    background-image: url('/textures/index-card.png');
+    @apply bg-cover bg-center relative;
+  }
+  
+  /* Button styles */
+  .btn {
+    @apply px-4 py-2 rounded transition-colors duration-200 inline-flex items-center justify-center;
+  }
+  
+  .btn-primary {
+    @apply bg-purple-600 text-white hover:bg-purple-700;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
+  }
+  
+  .btn-icon {
+    @apply p-2 rounded-full;
+  }
+  
+  /* Dark mode toggle */
+  .dark-toggle {
+    @apply p-2 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-yellow-200 dark:hover:bg-gray-600;
+  }
 }
 
-/* Texture handling in dark mode */
-.dark-mode .bg-wood-texture {
-  filter: brightness(0.7) contrast(1.2);
-}
-
-.dark-mode .bg-notebook-paper {
-  filter: brightness(0.8) contrast(1.1) sepia(0.2);
-}
-
-.dark-mode .bg-index-card {
-  filter: brightness(0.85) sepia(0.1);
-}
-
-.dark-mode .bg-parchment {
-  filter: brightness(0.75) sepia(0.2);
-}
-
-/* Add this for texture containers to ensure proper contrast in dark mode */
-.dark-mode .bg-wood-texture::after {
-  background-color: rgba(0, 0, 0, 0.8);
-}
-
-.dark-mode .bg-notebook-paper::after {
-  background-color: rgba(20, 20, 20, 0.7);
-}
-
-.dark-mode .bg-parchment::after {
-  background-color: rgba(20, 20, 20, 0.6);
-}
-
-.dark-mode .bg-index-card::after {
-  background-color: rgba(30, 30, 30, 0.5);
-}
-
-/* Improve text contrast in dark mode */
-.dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4 {
-  color: #ffffff;
-}
-
-.dark-mode p, .dark-mode span, .dark-mode div {
-  color: #e0e0e0;
-}
-
-/* Improved form styling with centering */
-.form-container {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.form-container label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  text-align: left;
-}
-
-.form-container input, 
-.form-container textarea, 
-.form-container select {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-.form-container button {
-  min-width: 120px;
-}
-
-/* Center card and content layouts */
-.content-centered {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  width: 100%;
-}
-
-.card-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+@layer utilities {
+  .content-container {
+    @apply w-full max-w-4xl mx-auto px-4;
+  }
+  
+  .content-centered {
+    @apply flex flex-col items-center justify-center;
+  }
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MenuIcon, Moon, Sun } from 'lucide-react';
 import { SidebarMenu } from './SidebarMenu';
+import { EvermarkLogo } from '../common/EvermarkLogo';
 
 interface LibraryLayoutProps {
   children: React.ReactNode;
@@ -29,75 +30,58 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
   const toggleDarkMode = () => setDarkMode(!darkMode);
   
   return (
-    <div style={{
-      backgroundColor: darkMode ? '#222' : '#f5f5f0',
-      color: darkMode ? '#f0f0f0' : '#333',
-      minHeight: '100vh',
-      transition: 'background-color 0.3s, color 0.3s'
-    }}>
-      {/* Header with dark mode toggle */}
-      <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '12px 20px',
-        borderBottom: `1px solid ${darkMode ? '#444' : '#ddd'}`,
-        backgroundColor: darkMode ? '#333' : 'white',
-      }}>
-        <button 
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          style={{ 
-            display: 'flex',
-            alignItems: 'center',
-            padding: '8px',
-            border: 'none',
-            borderRadius: '4px',
-            backgroundColor: 'transparent',
-            cursor: 'pointer',
-            color: darkMode ? '#f0f0f0' : '#333',
-          }}
-        >
-          <MenuIcon />
-          <span style={{ marginLeft: '8px' }}>Menu</span>
-        </button>
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className={`flex items-center justify-between px-4 py-3 border-b ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+        <div className="flex items-center">
+          <button 
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 mr-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+          >
+            <MenuIcon className="h-6 w-6" />
+          </button>
+          
+          <EvermarkLogo size="xs" />
+        </div>
         
         <button
           onClick={toggleDarkMode}
-          style={{ 
-            padding: '8px',
-            border: 'none',
-            borderRadius: '50%',
-            backgroundColor: darkMode ? '#555' : '#eee',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: darkMode ? '#f0f0f0' : '#333',
-          }}
+          className="dark-toggle"
+          aria-label="Toggle dark mode"
         >
           {darkMode ? <Sun size={20} /> : <Moon size={20} />}
         </button>
       </header>
-
+      
       {/* Main content */}
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        textAlign: 'center',
-      }}>
-        <div style={{ width: '100%', maxWidth: '800px' }}>
-          {/* Children content */}
+      <main className="flex-1 p-4">
+        <div className="content-container content-centered">
           {children}
         </div>
-      </div>
+      </main>
       
-      {/* Use the SidebarMenu component with dark mode prop */}
+      {/* Footer */}
+      <footer className={`py-4 text-center ${darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
+        <div className="content-container flex flex-col md:flex-row justify-between items-center">
+          <div className="flex items-center mb-4 md:mb-0">
+<img 
+  src="/EvermarkLogo.png" 
+  alt="Evermark Logo"
+  style={{ height: '16px', maxWidth: '60px', width: 'auto' }}
+/>            <span className="ml-2">© 2025 Evermark. All rights reserved.</span>
+          </div>
+          
+          <div className="flex space-x-6">
+            <a href="#" className="hover:underline">Terms</a>
+            <a href="#" className="hover:underline">Privacy</a>
+            <a href="#" className="hover:underline">Help</a>
+          </div>
+        </div>
+      </footer>
+      
+      {/* Sidebar */}
       <SidebarMenu 
-        isOpen={sidebarOpen} 
+        isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         darkMode={darkMode}
       />

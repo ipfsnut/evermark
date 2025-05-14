@@ -4,6 +4,12 @@ import { useAuth } from '../hooks/useAuth';
 import { useEvermarks } from '../hooks/useEvermarks';
 import { ContentType, EvermarkFormData } from '../types';
 import { metadataService } from '../services/metadata/MetadataService';
+import { StyledInput } from '../components/forms/StyledInput';
+import { StyledTextarea } from '../components/forms/StyledTextarea';
+import { StyledSelect } from '../components/forms/StyledSelect';
+import { StyledButton } from '../components/forms/StyledButton';
+import { StyledTagInput } from '../components/forms/StyledTagInput';
+import { SearchIcon, BookIcon, BookOpenIcon, FileTextIcon } from 'lucide-react';
 
 interface CreateEvermarkProps {
   onSuccess?: (evermark: any) => void;
@@ -90,14 +96,31 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
     }));
   };
 
-  // Handle tags input
-  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
+  // Handle tags
+  const handleAddTag = (tag: string) => {
     setFormData(prev => ({
       ...prev,
-      tags,
+      tags: [...(prev.tags || []), tag],
     }));
   };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: (prev.tags || []).filter(tag => tag !== tagToRemove),
+    }));
+  };
+
+  // Content type options for the dropdown
+  const contentTypeOptions = [
+    { value: ContentType.WEBSITE, label: 'Website' },
+    { value: ContentType.ARTICLE, label: 'Article' },
+    { value: ContentType.BOOK, label: 'Book' },
+    { value: ContentType.VIDEO, label: 'Video' },
+    { value: ContentType.AUDIO, label: 'Audio' },
+    { value: ContentType.DOCUMENT, label: 'Document' },
+    { value: ContentType.OTHER, label: 'Other' },
+  ];
 
   if (!isAuthenticated) {
     return (
@@ -112,168 +135,141 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
       <h2 className="text-2xl font-serif font-bold text-ink-dark mb-6">Add to the Library Collection</h2>
       
       {/* URL Input with Auto-Detect */}
-      <div className="mb-6">
-        <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
-          Source URL (optional)
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="url"
-            value={sourceUrl}
-            onChange={(e) => setSourceUrl(e.target.value)}
-            className="flex-1 px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
-            placeholder="https://example.com/article"
-          />
-          <button
+      <div className="mb-6 bg-parchment-texture p-5 rounded-lg border border-wood-light/30 shadow-sm">
+        <StyledInput
+          id="source-url"
+          label="Source URL (optional)"
+          value={sourceUrl}
+          onChange={(e) => setSourceUrl(e.target.value)}
+          placeholder="https://example.com/article"
+          hint="Enter a URL, DOI, or ISBN to auto-detect metadata"
+          containerClassName="mb-3"
+        />
+        
+        <div className="flex justify-end">
+          <StyledButton
             type="button"
             onClick={handleAutoDetect}
             disabled={!sourceUrl || autoDetecting}
-            className="px-4 py-2 bg-brass text-ink-dark rounded-md hover:bg-brass-dark disabled:opacity-50 font-serif shadow-sm"
+            variant="primary"
+            size="md"
+            isLoading={autoDetecting}
+            icon={<SearchIcon className="h-4 w-4" />}
           >
-            {autoDetecting ? 'Searching...' : 'Auto-Detect'}
-          </button>
+            {autoDetecting ? 'Detecting...' : 'Auto-Detect'}
+          </StyledButton>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Content Type */}
-        <div>
-          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
-            Content Type
-          </label>
-          <select
-            value={contentType}
-            onChange={(e) => setContentType(e.target.value as ContentType)}
-            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif appearance-none"
-          >
-            <option value={ContentType.WEBSITE}>Website</option>
-            <option value={ContentType.ARTICLE}>Article</option>
-            <option value={ContentType.BOOK}>Book</option>
-            <option value={ContentType.VIDEO}>Video</option>
-            <option value={ContentType.AUDIO}>Audio</option>
-            <option value={ContentType.DOCUMENT}>Document</option>
-            <option value={ContentType.OTHER}>Other</option>
-          </select>
-        </div>
+        <StyledSelect
+          id="content-type"
+          label="Content Type"
+          options={contentTypeOptions}
+          value={contentType}
+          onChange={(e) => setContentType(e.target.value as ContentType)}
+          icon={
+            contentType === ContentType.BOOK ? <BookIcon /> :
+            contentType === ContentType.ARTICLE ? <FileTextIcon /> :
+            <BookOpenIcon />
+          }
+        />
 
         {/* Title */}
-        <div>
-          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
-            Title <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleInputChange}
-            required
-            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
-            placeholder="Enter the title of this content"
-          />
-        </div>
+        <StyledInput
+          id="title"
+          name="title"
+          label="Title"
+          value={formData.title}
+          onChange={handleInputChange}
+          required
+          placeholder="Enter the title of this content"
+        />
 
         {/* Author */}
-        <div>
-          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
-            Author
-          </label>
-          <input
-            type="text"
-            name="author"
-            value={formData.author || ''}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
-            placeholder="Who created this content?"
-          />
-        </div>
+        <StyledInput
+          id="author"
+          name="author"
+          label="Author"
+          value={formData.author || ''}
+          onChange={handleInputChange}
+          placeholder="Who created this content?"
+        />
 
         {/* Description */}
-        <div>
-          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
-            Description
-          </label>
-          <textarea
-            name="description"
-            value={formData.description || ''}
-            onChange={handleInputChange}
-            rows={3}
-            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
-            placeholder="Briefly describe why this is worth preserving"
-          />
-        </div>
+        <StyledTextarea
+          id="description"
+          name="description"
+          label="Description"
+          value={formData.description || ''}
+          onChange={handleInputChange}
+          rows={3}
+          placeholder="Briefly describe why this is worth preserving"
+        />
 
         {/* Type-specific fields */}
         {contentType === ContentType.BOOK && (
-          <>
-            <div>
-              <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
-                ISBN
-              </label>
-              <input
-                type="text"
-                name="isbn"
-                value={formData.isbn || ''}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
-                placeholder="Enter ISBN number"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
-                Publisher
-              </label>
-              <input
-                type="text"
-                name="publisher"
-                value={formData.publisher || ''}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
-                placeholder="Publisher name"
-              />
-            </div>
-          </>
+          <div className="space-y-4 p-4 bg-warpcast/5 rounded-md border border-warpcast/10">
+            <h3 className="text-sm font-medium font-serif text-ink-dark">Book-specific Information</h3>
+            
+            <StyledInput
+              id="isbn"
+              name="isbn"
+              label="ISBN"
+              value={formData.isbn || ''}
+              onChange={handleInputChange}
+              placeholder="Enter ISBN number"
+            />
+            
+            <StyledInput
+              id="publisher"
+              name="publisher"
+              label="Publisher"
+              value={formData.publisher || ''}
+              onChange={handleInputChange}
+              placeholder="Publisher name"
+            />
+          </div>
         )}
 
         {contentType === ContentType.ARTICLE && (
-          <div>
-            <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
-              DOI
-            </label>
-            <input
-              type="text"
+          <div className="space-y-4 p-4 bg-warpcast/5 rounded-md border border-warpcast/10">
+            <h3 className="text-sm font-medium font-serif text-ink-dark">Article-specific Information</h3>
+            
+            <StyledInput
+              id="doi"
               name="doi"
+              label="DOI"
               value={formData.doi || ''}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
               placeholder="Digital Object Identifier (if available)"
             />
           </div>
         )}
 
         {/* Tags */}
-        <div>
-          <label className="block text-sm font-serif font-medium text-ink-dark mb-2">
-            Tags (comma-separated)
-          </label>
-          <input
-            type="text"
-            value={formData.tags?.join(', ') || ''}
-            onChange={handleTagsChange}
-            placeholder="history, science, literature, etc."
-            className="w-full px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass bg-parchment-light bg-opacity-80 font-serif"
-          />
-          <p className="mt-1 text-xs text-ink-light font-serif">Separate tags with commas</p>
-        </div>
+        <StyledTagInput
+          id="tags"
+          label="Tags (comma-separated)"
+          tags={formData.tags || []}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+          hint="Add keywords to help others discover your evermark"
+        />
 
         {/* Submit */}
         <div className="pt-4">
-          <button
+          <StyledButton
             type="submit"
             disabled={creating || !isAuthenticated || !formData.title}
-            className="w-full px-6 py-3 bg-wood text-parchment-light rounded-md hover:bg-wood-dark disabled:opacity-50 disabled:cursor-not-allowed font-serif font-medium shadow-md transition-colors"
+            variant="primary"
+            size="lg"
+            isLoading={creating}
+            className="w-full"
           >
             {creating ? 'Creating Evermark...' : 'Add to Library Collection'}
-          </button>
+          </StyledButton>
         </div>
       </form>
     </div>

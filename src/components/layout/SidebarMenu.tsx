@@ -64,15 +64,33 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onClose, darkM
           <XIcon />
         </button>
         
-        <h2 style={{ 
+        {/* Logo instead of "Menu" text */}
+        <div style={{ 
           marginTop: '40px', 
-          textAlign: 'center', 
-          color: '#f0f0f0',
-          fontSize: '24px',
-          marginBottom: '30px'
+          textAlign: 'center',
+          marginBottom: '30px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
         }}>
-          Menu
-        </h2>
+          <img 
+            src="/EvermarkLogo.png" 
+            alt="Evermark Logo" 
+            style={{
+              height: '40px',
+              maxWidth: '150px',
+              width: 'auto',
+              marginBottom: '10px'
+            }}
+          />
+          <span style={{
+            color: '#f0f0f0',
+            fontSize: '16px',
+            marginTop: '8px'
+          }}>
+            Menu
+          </span>
+        </div>
         
         <nav>
           <ul style={{ 
