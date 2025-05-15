@@ -4,12 +4,14 @@ import { useAuth } from '../hooks/useAuth';
 import { useEvermarks } from '../hooks/useEvermarks';
 import { ContentType, EvermarkFormData } from '../types';
 import { metadataService } from '../services/metadata/MetadataService';
-import { StyledInput } from '../components/forms/StyledInput';
-import { StyledTextarea } from '../components/forms/StyledTextarea';
-import { StyledSelect } from '../components/forms/StyledSelect';
-import { StyledButton } from '../components/forms/StyledButton';
-import { StyledTagInput } from '../components/forms/StyledTagInput';
-import { SearchIcon, BookIcon, BookOpenIcon, FileTextIcon } from 'lucide-react';
+import { StyledInput } from './forms/StyledInput';
+import { StyledTextarea } from './forms/StyledTextarea';
+import { StyledSelect } from './forms/StyledSelect';
+import { StyledButton } from './forms/StyledButton';
+import { StyledTagInput } from './forms/StyledTagInput';
+import { BookIcon, BookOpenIcon, FileTextIcon } from 'lucide-react';
+import { UrlDetectionSection } from './evermark/UrlDetectionSection';
+import { ContentTypeFields } from './evermark/ContentTypeFields';
 
 interface CreateEvermarkProps {
   onSuccess?: (evermark: any) => void;
@@ -135,31 +137,13 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
       <h2 className="text-2xl font-serif font-bold text-ink-dark mb-6">Add to the Library Collection</h2>
       
       {/* URL Input with Auto-Detect */}
-      <div className="mb-6 bg-parchment-texture p-5 rounded-lg border border-wood-light/30 shadow-sm">
-        <StyledInput
-          id="source-url"
-          label="Source URL (optional)"
-          value={sourceUrl}
-          onChange={(e) => setSourceUrl(e.target.value)}
-          placeholder="https://example.com/article"
-          hint="Enter a URL, DOI, or ISBN to auto-detect metadata"
-          containerClassName="mb-3"
-        />
-        
-        <div className="flex justify-end">
-          <StyledButton
-            type="button"
-            onClick={handleAutoDetect}
-            disabled={!sourceUrl || autoDetecting}
-            variant="primary"
-            size="md"
-            isLoading={autoDetecting}
-            icon={<SearchIcon className="h-4 w-4" />}
-          >
-            {autoDetecting ? 'Detecting...' : 'Auto-Detect'}
-          </StyledButton>
-        </div>
-      </div>
+      <UrlDetectionSection
+        sourceUrl={sourceUrl}
+        onSourceUrlChange={setSourceUrl}
+        onAutoDetect={handleAutoDetect}
+        isAutoDetecting={autoDetecting}
+        className="mb-6"
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Content Type */}
@@ -170,9 +154,9 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
           value={contentType}
           onChange={(e) => setContentType(e.target.value as ContentType)}
           icon={
-            contentType === ContentType.BOOK ? <BookIcon /> :
-            contentType === ContentType.ARTICLE ? <FileTextIcon /> :
-            <BookOpenIcon />
+            contentType === ContentType.BOOK ? <BookIcon className="h-4 w-4" /> :
+            contentType === ContentType.ARTICLE ? <FileTextIcon className="h-4 w-4" /> :
+            <BookOpenIcon className="h-4 w-4" />
           }
         />
 
@@ -209,49 +193,16 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
         />
 
         {/* Type-specific fields */}
-        {contentType === ContentType.BOOK && (
-          <div className="space-y-4 p-4 bg-warpcast/5 rounded-md border border-warpcast/10">
-            <h3 className="text-sm font-medium font-serif text-ink-dark">Book-specific Information</h3>
-            
-            <StyledInput
-              id="isbn"
-              name="isbn"
-              label="ISBN"
-              value={formData.isbn || ''}
-              onChange={handleInputChange}
-              placeholder="Enter ISBN number"
-            />
-            
-            <StyledInput
-              id="publisher"
-              name="publisher"
-              label="Publisher"
-              value={formData.publisher || ''}
-              onChange={handleInputChange}
-              placeholder="Publisher name"
-            />
-          </div>
-        )}
-
-        {contentType === ContentType.ARTICLE && (
-          <div className="space-y-4 p-4 bg-warpcast/5 rounded-md border border-warpcast/10">
-            <h3 className="text-sm font-medium font-serif text-ink-dark">Article-specific Information</h3>
-            
-            <StyledInput
-              id="doi"
-              name="doi"
-              label="DOI"
-              value={formData.doi || ''}
-              onChange={handleInputChange}
-              placeholder="Digital Object Identifier (if available)"
-            />
-          </div>
-        )}
+        <ContentTypeFields
+          contentType={contentType}
+          formData={formData}
+          onChange={handleInputChange}
+        />
 
         {/* Tags */}
         <StyledTagInput
           id="tags"
-          label="Tags (comma-separated)"
+          label="Tags"
           tags={formData.tags || []}
           onAddTag={handleAddTag}
           onRemoveTag={handleRemoveTag}
