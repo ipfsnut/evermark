@@ -1,7 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useEvermarks } from '../hooks/useEvermarks';
 import { useAuth } from '../hooks/useAuth';
+import { VotingPanel } from '../components/voting/VotingPanel';
+import { VotingHistory } from '../components/voting/VotingHistory';
+import { VotePowerAllocation } from '../components/voting/VotePowerAllocation';
+import { CycleInfoBar } from '../components/voting/CycleInfoBar';
 import { 
   ExternalLinkIcon, 
   BookOpenIcon, 
@@ -9,18 +13,12 @@ import {
   CalendarIcon, 
   TagIcon,
   ArrowLeftIcon,
-  VoteIcon
 } from 'lucide-react';
 
 const EvermarkDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { fetchEvermark, selectedEvermark, selectEvermark, loading, error, vote, getVotes } = useEvermarks();
+  const { fetchEvermark, selectedEvermark, selectEvermark, loading, error } = useEvermarks();
   const { isAuthenticated, user } = useAuth();
-  const [voteAmount, setVoteAmount] = useState('');
-  const [voting, setVoting] = useState(false);
-  const [voteError, setVoteError] = useState('');
-  const [userVotes, setUserVotes] = useState(0);
-  const [totalVotes, setTotalVotes] = useState(0);
 
   useEffect(() => {
     if (id) {
@@ -28,18 +26,6 @@ const EvermarkDetailPage: React.FC = () => {
         const evermark = await fetchEvermark(id);
         if (evermark) {
           selectEvermark(evermark);
-          
-          // Load voting info if user is authenticated
-          if (isAuthenticated && user) {
-            try {
-              const votes = await getVotes(id);
-              setTotalVotes(Number(votes));
-              // You'd need to implement getUserVotes in your service
-              // setUserVotes(await getUserVotes(id, user.walletAddress));
-            } catch (err) {
-              console.error('Failed to load voting info:', err);
-            }
-          }
         }
       };
       
@@ -49,28 +35,7 @@ const EvermarkDetailPage: React.FC = () => {
     return () => {
       selectEvermark(null);
     };
-  }, [id, isAuthenticated, user]);
-
-  const handleVote = async () => {
-    if (!voteAmount || !selectedEvermark) return;
-    
-    setVoting(true);
-    setVoteError('');
-    
-    try {
-      const result = await vote(selectedEvermark.id, voteAmount);
-      if (result) {
-        // Refresh vote counts
-        const newTotalVotes = await getVotes(selectedEvermark.id);
-        setTotalVotes(Number(newTotalVotes));
-        setVoteAmount('');
-      }
-    } catch (error: any) {
-      setVoteError(error.message || 'Failed to vote');
-    } finally {
-      setVoting(false);
-    }
-  };
+  }, [id, isAuthenticated, user, fetchEvermark, selectEvermark]);  // Added missing dependencies
 
   if (loading) {
     return (
@@ -96,7 +61,7 @@ const EvermarkDetailPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Back Navigation */}
-      <div className="mb-6">
+      <div className="mb-4">
         <Link 
           to="/" 
           className="inline-flex items-center text-sm text-wood hover:text-wood-dark transition-colors font-serif"
@@ -105,6 +70,11 @@ const EvermarkDetailPage: React.FC = () => {
           Back to Catalog
         </Link>
       </div>
+
+      {/* Voting Cycle Information Bar */}
+      {isAuthenticated && (
+        <CycleInfoBar />
+      )}
 
       {/* Main Content */}
       <div className="bg-parchment-texture rounded-lg shadow-lg overflow-hidden border border-wood-light">
@@ -125,7 +95,7 @@ const EvermarkDetailPage: React.FC = () => {
         <div className="p-6">
           {/* Description */}
           {selectedEvermark.description && (
-            <div className="mb-6 animate-text-in" style={{animationDelay: "0.1s"}}>
+            <div className="mb-6 animate-text-in">
               <h2 className="text-responsive-card-title text-ink-dark mb-2">Description</h2>
               <p className="text-ink-light font-serif leading-relaxed">{selectedEvermark.description}</p>
             </div>
@@ -133,13 +103,13 @@ const EvermarkDetailPage: React.FC = () => {
 
           {/* External Link */}
           {selectedEvermark.metadata?.external_url && (
-            <div className="mb-6 animate-text-in" style={{animationDelay: "0.2s"}}>
-              <a
+            <div className="mb-6 animate-text-in">
+              
                 href={selectedEvermark.metadata.external_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center text-brass hover:text-brass-dark transition-colors font-serif"
-              >
+              <a>
                 <ExternalLinkIcon className="w-4 h-4 mr-1" />
                 View Original Content
               </a>
@@ -148,7 +118,7 @@ const EvermarkDetailPage: React.FC = () => {
 
           {/* Tags */}
           {selectedEvermark.metadata?.tags && selectedEvermark.metadata.tags.length > 0 && (
-            <div className="mb-6 animate-text-in" style={{animationDelay: "0.3s"}}>
+            <div className="mb-6 animate-text-in">
               <h2 className="text-responsive-card-title text-ink-dark mb-2">Tags</h2>
               <div className="flex flex-wrap gap-2">
                 {selectedEvermark.metadata.tags.map((tag) => (
@@ -163,57 +133,44 @@ const EvermarkDetailPage: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Voting Section */}
-          {isAuthenticated && !isOwner && (
-            <div className="border-t border-wood-light pt-6 mt-6 animate-text-in" style={{animationDelay: "0.4s"}}>
-              <h2 className="text-responsive-card-title text-ink-dark mb-4">Vote on this Evermark</h2>
-              
-              <div className="flex items-center gap-4 mb-4">
-                <input
-                  type="number"
-                  value={voteAmount}
-                  onChange={(e) => setVoteAmount(e.target.value)}
-                  placeholder="Amount to vote"
-                  className="flex-1 px-3 py-2 border border-wood-light rounded-md focus:outline-none focus:ring-2 focus:ring-brass font-serif bg-parchment-light bg-opacity-80"
-                  min="0"
-                  step="0.01"
-                />
-                <button
-                  onClick={handleVote}
-                  disabled={voting || !voteAmount}
-                  className="px-6 py-2 bg-brass text-ink-dark rounded-md hover:bg-brass-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center font-serif transition-colors duration-200"
-                >
-                  {voting ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-ink-dark mr-2"></div>
-                  ) : (
-                    <VoteIcon className="w-4 h-4 mr-2" />
-                  )}
-                  Vote
-                </button>
-              </div>
-
-              {voteError && (
-                <p className="text-sm text-red-600 mb-4 font-serif leading-relaxed">{voteError}</p>
-              )}
-
-              <div className="text-sm text-ink-light font-serif tracking-wide">
-                Total votes: <span className="font-medium">{totalVotes}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Owner Actions */}
-          {isOwner && (
-            <div className="border-t border-wood-light pt-6 mt-6 animate-text-in" style={{animationDelay: "0.4s"}}>
-              <p className="text-sm text-green-600 font-serif tracking-wide">You own this Evermark</p>
-            </div>
-          )}
         </div>
       </div>
 
+      {/* Voting Section (only if authenticated) */}
+      {isAuthenticated && (
+        <div className="mt-8">
+          {/* Desktop: Side-by-side layout */}
+          <div className="hidden md:grid md:grid-cols-2 gap-6">
+            <div>
+              <VotingPanel evermarkId={selectedEvermark.id} isOwner={isOwner} />
+              <VotingHistory evermarkId={selectedEvermark.id} />
+            </div>
+            <div>
+              <VotePowerAllocation />
+            </div>
+          </div>
+          
+          {/* Mobile: Stacked layout */}
+          <div className="md:hidden space-y-6">
+            <VotingPanel evermarkId={selectedEvermark.id} isOwner={isOwner} />
+            <VotePowerAllocation />
+            <VotingHistory evermarkId={selectedEvermark.id} />
+          </div>
+        </div>
+      )}
+
+      {/* Not Authenticated Message */}
+      {!isAuthenticated && (
+        <div className="mt-8 bg-parchment-texture p-6 rounded-lg border border-wood-light text-center">
+          <p className="font-serif text-ink-dark mb-2">Connect your wallet to vote on this Evermark</p>
+          <p className="text-sm font-serif text-ink-light">
+            Voting helps valuable content rise to the top of the leaderboard
+          </p>
+        </div>
+      )}
+
       {/* Additional Info */}
-      <div className="mt-6 bg-index-card rounded-lg p-4 border border-wood-light animate-text-in" style={{animationDelay: "0.5s"}}>
+      <div className="mt-6 bg-index-card rounded-lg p-4 border border-wood-light animate-text-in">
         <h3 className="text-sm font-serif font-medium text-ink-dark mb-2 tracking-tight">Catalog Information</h3>
         <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-serif">
           <div>
