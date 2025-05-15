@@ -1,8 +1,8 @@
-// src/components/layout/Header.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MenuIcon, Moon, Sun } from 'lucide-react';
 import { EvermarkLogo } from '../common/EvermarkLogo';
+import { ConnectButton } from '../auth/ConnectButton';
 
 interface HeaderProps {
   onMenuOpen: () => void;
@@ -35,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="absolute inset-0 bg-black bg-opacity-70 dark:bg-opacity-80"></div>
       
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-2 flex justify-between items-center">
+        {/* Left side with menu and logo */}
         <div className="flex items-center">
           <button 
             onClick={onMenuOpen}
@@ -45,11 +46,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           
           <div className="flex items-center">
-            {/* The logo is now properly sized for the header */}
-            <EvermarkLogo size="lg" className="mr-2" />
+            <EvermarkLogo size="sm" className="mr-2" />
           </div>
           
-          {/* Page title indicator */}
           {currentPath && (
             <>
               <div className="hidden sm:block h-6 mx-3 w-px bg-brass/30"></div>
@@ -60,13 +59,20 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
         
-        <button
-          onClick={toggleDarkMode}
-          className="p-1.5 rounded-full text-parchment-light hover:bg-black/20 transition-colors"
-          aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </button>
+        {/* Right side with wallet connect and theme toggle */}
+        <div className="flex items-center space-x-3">
+          {/* Wallet connect button */}
+          <ConnectButton />
+          
+          {/* Theme toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className="p-1.5 rounded-full text-parchment-light hover:bg-black/20 transition-colors"
+            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
     </header>
   );

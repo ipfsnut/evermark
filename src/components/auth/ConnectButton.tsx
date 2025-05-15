@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useAuth } from '../../hooks/useAuth';
-import { WalletIcon } from 'lucide-react';
+import { WalletIcon, LogOutIcon, LoaderIcon } from 'lucide-react';
 
 export const ConnectButton: React.FC = () => {
   const { isConnected, address } = useAccount();
@@ -17,7 +17,7 @@ export const ConnectButton: React.FC = () => {
   // If authenticated, show user info and sign out
   if (isAuthenticated && user) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 group">
         <div className="text-sm text-parchment-light hidden sm:block">
           <div className="font-medium">{user.username || 'User'}</div>
           <div className="text-xs font-mono opacity-70">
@@ -26,9 +26,9 @@ export const ConnectButton: React.FC = () => {
         </div>
         <button
           onClick={() => signOut()}
-          className="flex items-center gap-2 px-3 py-1.5 bg-ink-light hover:bg-ink-dark text-parchment-light text-sm rounded-md border border-warpcast/40 transition-all hover:shadow-[0_0_8px_rgba(130,82,228,0.3)] hover:border-warpcast"
+          className="flex items-center gap-2 px-3 py-1.5 bg-ink-light hover:bg-ink-dark text-parchment-light text-sm rounded-md border border-warpcast/40 transition-all hover:shadow-[0_0_8px_rgba(130,82,228,0.3)] hover:border-warpcast group-hover:border-warpcast/60"
         >
-          <WalletIcon className="w-4 h-4 text-warpcast" />
+          <LogOutIcon className="w-4 h-4 text-warpcast" />
           <span className="hidden sm:inline">Sign Out</span>
         </button>
       </div>
@@ -42,23 +42,26 @@ export const ConnectButton: React.FC = () => {
         disabled
         className="flex items-center justify-center gap-2 px-3 py-1.5 bg-warpcast/20 text-parchment-light/70 rounded-md cursor-not-allowed"
       >
-        <div className="h-4 w-4 rounded-full border-2 border-warpcast/30 border-t-warpcast animate-spin"></div>
+        <LoaderIcon className="w-4 h-4 animate-spin text-warpcast-light" />
         <span className="hidden sm:inline">Connecting...</span>
       </button>
     );
   }
 
-  // If not connected, show connection options
+  // If not connected, show connection options with improved UI
   return (
     <div className="flex gap-2">
       {connectors.map((connector) => (
         <button
           key={connector.id}
           onClick={handleConnect(connector)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-warpcast text-white rounded-md hover:bg-warpcast-dark transition-all duration-200 shadow-md hover:shadow-[0_0_12px_rgba(130,82,228,0.5)]"
+          className="flex items-center gap-2 px-3 py-1.5 bg-warpcast text-white rounded-md hover:bg-warpcast-dark transition-all duration-200 shadow-md hover:shadow-[0_0_12px_rgba(130,82,228,0.5)] relative overflow-hidden group"
         >
-          <WalletIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">Connect {connector.name}</span>
+          {/* Animated gradient background on hover */}
+          <div className="absolute inset-0 bg-gradient-to-r from-warpcast via-warpcast-dark to-warpcast opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+          <WalletIcon className="w-4 h-4 relative z-10" />
+          <span className="hidden sm:inline relative z-10">Connect {connector.name}</span>
         </button>
       ))}
     </div>

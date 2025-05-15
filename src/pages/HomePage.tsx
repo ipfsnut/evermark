@@ -1,22 +1,25 @@
-// src/pages/HomePage.tsx
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useEvermarks } from '../hooks/useEvermarks';
 import { Link } from 'react-router-dom';
-import { PlusIcon, BookmarkIcon, BookOpenIcon, SparklesIcon, TrendingUpIcon } from 'lucide-react';
+import { PlusIcon, BookmarkIcon, BookOpenIcon, SearchIcon } from 'lucide-react';
 import { Evermark } from '../types/evermark.types';
 import { CatalogDrawer } from '../components/catalog/CatalogDrawer';
 
 const HomePage: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
-  const { list: listEvermarks, loading, error } = useEvermarks();
+  const { isAuthenticated } = useAuth();
+  const { list, loading } = useEvermarks();
   const [recentEvermarks, setRecentEvermarks] = useState<Evermark[]>([]);
   const [popularEvermarks, setPopularEvermarks] = useState<Evermark[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchEvermarks = async () => {
       try {
-        const evermarks = await listEvermarks();
+        // Show loading indicator while fetching
+        if (loading) return;
+        
+        const evermarks = await list();
         
         // Set recent evermarks
         setRecentEvermarks(evermarks.slice(0, 6));
@@ -32,22 +35,11 @@ const HomePage: React.FC = () => {
     };
 
     fetchEvermarks();
-  }, [listEvermarks]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="w-16 h-16 relative">
-          <div className="absolute inset-0 rounded-full border-4 border-t-warpcast border-r-warpcast/30 border-b-warpcast/10 border-l-warpcast/70 animate-spin"></div>
-          <BookOpenIcon className="absolute inset-0 m-auto w-6 h-6 text-warpcast-light" />
-        </div>
-      </div>
-    );
-  }
+  }, [list, loading]);
 
   return (
     <div className="space-y-8 transition-all duration-300">
-      {/* Hero Section with Warpcast accents */}
+      {/* Enhanced Hero Section with search */}
       <div className="relative overflow-hidden rounded-xl shadow-2xl">
         {/* Background with texture and overlay */}
         <div className="absolute inset-0 bg-parchment-texture opacity-90"></div>
@@ -56,6 +48,9 @@ const HomePage: React.FC = () => {
         {/* Purple light beam effect */}
         <div className="absolute -top-20 -right-20 w-40 h-80 bg-warpcast/20 blur-3xl rotate-15 opacity-70"></div>
         
+        {/* New decorative bookshelf texture */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-wood-dark opacity-10"></div>
+        
         {/* Content */}
         <div className="relative py-12 px-8 text-center">
           <div className="relative inline-block mb-6">
@@ -63,33 +58,52 @@ const HomePage: React.FC = () => {
             <div className="absolute -inset-1 rounded-full bg-warpcast/5 blur-md -z-10"></div>
           </div>
           
-          <h1 className="text-responsive-title text-ink-dark mb-2 animate-text-in">
-            Welcome to <span className="text-warpcast">Evermark</span> Library
+          <h1 className="text-responsive-title text-ink-dark mb-3 animate-text-in">
+            Welcome to <span className="text-warpcast relative">
+              Evermark
+              <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-warpcast/30"></span>
+            </span> Library
           </h1>
           
-          <p className="text-responsive-body text-ink-light mb-8 max-w-2xl mx-auto animate-text-in">
+          <p className="text-responsive-body text-ink-light mb-6 max-w-2xl mx-auto animate-text-in font-serif">
             Preserve and catalogue your favorite content from across the internet.
           </p>
+          
+          {/* Search bar */}
+          <div className="max-w-md mx-auto mb-8 relative animate-text-in">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search the library..."
+                className="w-full px-4 py-3 pl-10 bg-parchment-light/80 border border-brass/30 rounded-md focus:outline-none focus:ring-2 focus:ring-warpcast/30 font-serif text-ink-dark shadow-inner"
+              />
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brass-dark" />
+            </div>
+          </div>
           
           {isAuthenticated ? (
             <div className="flex flex-wrap gap-4 justify-center">
               <Link
                 to="/create"
-                className="inline-flex items-center px-6 py-3 bg-warpcast text-white rounded-md hover:bg-warpcast-dark transition-all duration-300 shadow-lg hover:shadow-warpcast/20 hover:shadow-xl"
+                className="inline-flex items-center px-6 py-3 bg-warpcast text-white rounded-md hover:bg-warpcast-dark transition-all duration-300 shadow-lg hover:shadow-warpcast/20 hover:shadow-xl relative overflow-hidden group"
               >
-                <PlusIcon className="w-5 h-5 mr-2" />
-                Create Evermark
+                {/* Animated gradient background on hover */}
+                <div className="absolute inset-0 bg-gradient-to-r from-warpcast via-warpcast-dark to-warpcast opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <PlusIcon className="w-5 h-5 mr-2 relative z-10" />
+                <span className="relative z-10">Create Evermark</span>
               </Link>
               <Link
                 to="/my-evermarks"
                 className="inline-flex items-center px-6 py-3 bg-parchment border border-warpcast/30 rounded-md hover:border-warpcast hover:bg-parchment-dark transition-all duration-300 shadow-md text-ink-dark hover:text-warpcast-dark"
               >
                 <BookmarkIcon className="w-5 h-5 mr-2" />
-                My Collection
+                <span>My Collection</span>
               </Link>
             </div>
           ) : (
-            <div className="text-ink-light font-serif p-6 inline-block rounded-md bg-parchment border border-warpcast/20 shadow-md relative">
+            <div className="text-ink-light font-serif p-6 inline-block rounded-md bg-parchment border border-warpcast/20 shadow-md relative backdrop-blur-sm">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-warpcast/30 to-warpcast/5 rounded-md blur-sm -z-10"></div>
               Connect your wallet to get started
             </div>
@@ -100,46 +114,16 @@ const HomePage: React.FC = () => {
       {/* Stats Overview - only show if there are evermarks */}
       {(recentEvermarks.length > 0 || popularEvermarks.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-parchment-texture rounded-lg overflow-hidden shadow-md border border-wood-light/50 relative group hover:border-warpcast/30 transition-all duration-300">
+          <div className="bg-parchment-texture rounded-lg overflow-hidden shadow-md border border-wood-light/50 relative group hover:border-warpcast/30 transition-all duration-300 hover:-translate-y-1">
             <div className="absolute top-0 left-0 w-full h-1 bg-warpcast/50"></div>
             <div className="p-4 flex items-center">
-              <div className="p-3 rounded-full bg-warpcast/10 mr-4">
+              <div className="p-3 rounded-full bg-warpcast/10 mr-4 group-hover:bg-warpcast/20 transition-colors">
                 <BookOpenIcon className="w-6 h-6 text-warpcast" />
               </div>
               <div>
                 <h3 className="text-lg font-serif font-medium text-ink-dark">Library Entries</h3>
                 <p className="text-2xl font-mono text-warpcast font-bold">
                   {recentEvermarks.length + popularEvermarks.length}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-parchment-texture rounded-lg overflow-hidden shadow-md border border-wood-light/50 relative group hover:border-warpcast/30 transition-all duration-300">
-            <div className="absolute top-0 left-0 w-full h-1 bg-warpcast/50"></div>
-            <div className="p-4 flex items-center">
-              <div className="p-3 rounded-full bg-warpcast/10 mr-4">
-                <SparklesIcon className="w-6 h-6 text-warpcast" />
-              </div>
-              <div>
-                <h3 className="text-lg font-serif font-medium text-ink-dark">Content Types</h3>
-                <p className="text-2xl font-mono text-warpcast font-bold">
-                  {Array.from(new Set(recentEvermarks.map(e => e.metadata?.type))).length}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-parchment-texture rounded-lg overflow-hidden shadow-md border border-wood-light/50 relative group hover:border-warpcast/30 transition-all duration-300">
-            <div className="absolute top-0 left-0 w-full h-1 bg-warpcast/50"></div>
-            <div className="p-4 flex items-center">
-              <div className="p-3 rounded-full bg-warpcast/10 mr-4">
-                <TrendingUpIcon className="w-6 h-6 text-warpcast" />
-              </div>
-              <div>
-                <h3 className="text-lg font-serif font-medium text-ink-dark">Top Votes</h3>
-                <p className="text-2xl font-mono text-warpcast font-bold">
-                  {popularEvermarks[0]?.metadata?.totalVotes || 0}
                 </p>
               </div>
             </div>
@@ -165,16 +149,17 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Empty state with upgraded styling */}
-      {recentEvermarks.length === 0 && (
+      {recentEvermarks.length === 0 && popularEvermarks.length === 0 && (
         <div className="relative text-center py-16 bg-parchment-texture border border-wood-light rounded-lg overflow-hidden">
-          {/* Add warpcast glow effect */}
+          {/* Add decorative elements */}
+          <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-warpcast/30 via-warpcast/10 to-warpcast/30"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-warpcast/5 to-transparent pointer-events-none"></div>
           
           <BookOpenIcon className="mx-auto h-16 w-16 text-wood opacity-60 mb-6" />
           <div className="relative">
-            <h3 className="text-responsive-card-title text-ink-dark mb-4">The Library is Empty</h3>
+            <h3 className="text-responsive-card-title text-ink-dark mb-4 font-serif">The Library Awaits Its First Entry</h3>
             <p className="mt-2 font-serif text-ink-light max-w-lg mx-auto leading-relaxed px-4">
-              No evermarks have been catalogued yet. Be the first to preserve valuable content for the library.
+              Your digital library is empty and ready for your first contribution. Preserve valuable content for posterity.
             </p>
             {isAuthenticated && (
               <Link
@@ -182,10 +167,13 @@ const HomePage: React.FC = () => {
                 className="mt-8 inline-flex items-center px-6 py-3 bg-warpcast text-white rounded-md hover:bg-warpcast-dark transition-all duration-300 shadow-lg hover:shadow-warpcast/30"
               >
                 <PlusIcon className="w-5 h-5 mr-2" />
-                Create Your First Evermark
+                <span>Create Your First Evermark</span>
               </Link>
             )}
           </div>
+          
+          {/* Decorative book-related elements */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-brass/20 to-transparent"></div>
         </div>
       )}
     </div>

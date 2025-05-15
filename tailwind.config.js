@@ -1,4 +1,3 @@
-// tailwind.config.js
 module.exports = {
   content: [
     "./index.html",
@@ -69,6 +68,17 @@ module.exports = {
       },
     },
   },
+  safelist: [
+    'bg-parchment-texture',
+    'bg-wood-texture',
+    'bg-index-card',
+    'text-warpcast',
+    'text-ink-dark',
+    'text-parchment-light',
+    'text-brass-dark',
+    'font-serif',
+    'animate-text-in'
+  ],
   plugins: [
     require('@tailwindcss/line-clamp'),
   ],

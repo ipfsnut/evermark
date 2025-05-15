@@ -185,3 +185,11 @@
     background-position: 0% 50%;
   }
 }
+
+/* Fix for the border-t and border-r corner fold */
+.border-t-16 {
+  border-top-width: 16px;
+}
+.border-r-16 {
+  border-right-width: 16px;
+}
