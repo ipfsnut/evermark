@@ -1,7 +1,7 @@
 // src/hooks/useAuctions.ts
 import { useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
-import { contractService } from '../services/blockchain';
+import { evermarkAuctionService } from '../services/blockchain';
 import { errorLogger } from '../utils/error-logger';
 import { AuctionData } from '../types/blockchain.types';
 
@@ -20,13 +20,13 @@ export function useAuctions() {
     setError(null);
     
     try {
-      const auctions = await contractService.getActiveAuctions();
+      const auctions = await evermarkAuctionService.getActiveAuctions();
       setActiveAuctions(auctions);
       
       // Fetch details for each auction
       const detailsMap = new Map<string, AuctionData>();
       for (const auctionId of auctions) {
-        const details = await contractService.getAuctionDetails(auctionId);
+        const details = await evermarkAuctionService.getAuctionDetails(auctionId);
         if (details) {
           detailsMap.set(auctionId, details);
         }
@@ -49,7 +49,7 @@ export function useAuctions() {
     }
     
     try {
-      const details = await contractService.getAuctionDetails(auctionId);
+      const details = await evermarkAuctionService.getAuctionDetails(auctionId);
       if (details) {
         // Update the details map
         setAuctionDetails(prev => new Map(prev).set(auctionId, details));
@@ -75,7 +75,7 @@ export function useAuctions() {
     setActionError(null);
     
     try {
-      const { wait } = await contractService.createAuction(
+      const { wait } = await evermarkAuctionService.createAuction(
         nftContract,
         tokenId,
         startingPrice,
@@ -112,7 +112,7 @@ export function useAuctions() {
     setActionError(null);
     
     try {
-      const { wait } = await contractService.placeBid(auctionId, amount);
+      const { wait } = await evermarkAuctionService.placeBid(auctionId, amount);
       await wait();
       
       // Refresh auction details
@@ -136,7 +136,7 @@ export function useAuctions() {
     setActionError(null);
     
     try {
-      const { wait } = await contractService.finalizeAuction(auctionId);
+      const { wait } = await evermarkAuctionService.finalizeAuction(auctionId);
       await wait();
       
       // Refresh auctions
@@ -160,7 +160,7 @@ export function useAuctions() {
     setActionError(null);
     
     try {
-      const { wait } = await contractService.cancelAuction(auctionId);
+      const { wait } = await evermarkAuctionService.cancelAuction(auctionId);
       await wait();
       
       // Refresh auctions

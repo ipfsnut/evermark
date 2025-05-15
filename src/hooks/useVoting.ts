@@ -1,7 +1,7 @@
 // src/hooks/useVoting.ts
 import { useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
-import { contractService } from '../services/blockchain';
+import { evermarkVotingService } from '../services/blockchain';
 import { errorLogger } from '../utils/error-logger';
 
 export function useVoting() {
@@ -21,7 +21,7 @@ export function useVoting() {
     setError(null);
     
     try {
-      const totalVotes = await contractService.getBookmarkVotes(evermarkId);
+      const totalVotes = await evermarkVotingService.getEvermarkVotes(evermarkId);
       setVotes(totalVotes);
       return totalVotes;
     } catch (err: any) {
@@ -42,7 +42,7 @@ export function useVoting() {
     setError(null);
     
     try {
-      const votes = await contractService.getUserVotesForBookmark(address, evermarkId);
+      const votes = await evermarkVotingService.getUserVotesForEvermark(address, evermarkId);
       setUserVotes(votes);
       return votes;
     } catch (err: any) {
@@ -63,7 +63,7 @@ export function useVoting() {
     setVotingError(null);
     
     try {
-      const { wait } = await contractService.delegateVotes(evermarkId, amount);
+      const { wait } = await evermarkVotingService.delegateVotes(evermarkId, amount);
       await wait();
       
       // Refresh votes
@@ -89,7 +89,7 @@ export function useVoting() {
     setVotingError(null);
     
     try {
-      const { wait } = await contractService.undelegateVotes(evermarkId, amount);
+      const { wait } = await evermarkVotingService.undelegateVotes(evermarkId, amount);
       await wait();
       
       // Refresh votes
@@ -114,8 +114,8 @@ export function useVoting() {
     
     try {
       const [currentCycle, remaining] = await Promise.all([
-        contractService.getCurrentCycle(),
-        contractService.getTimeRemainingInCurrentCycle()
+        evermarkVotingService.getCurrentCycle(),
+        evermarkVotingService.getTimeRemainingInCurrentCycle()
       ]);
       
       setCycle(currentCycle);

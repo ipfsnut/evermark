@@ -1,7 +1,7 @@
 // src/hooks/useBlockchain.ts - Enhanced with better error handling
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
-import { contractService, formatEther } from '../services/blockchain';
+import { tokenStakingService, formatEther } from '../services/blockchain';
 import { TokenBalance, StakeInfo, TransactionState } from '../types';
 import { errorLogger } from '../utils/error-logger';
 
@@ -64,7 +64,7 @@ export function useBlockchain(): UseBlockchainReturn {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      // Fetch all balances in parallel - note we're using the enhanced contract service
+      // Fetch all balances in parallel - note we're using the enhanced service
       // methods that now have proper error handling with fallbacks
       const [
         nsiBalance,
@@ -72,19 +72,19 @@ export function useBlockchain(): UseBlockchainReturn {
         votingPower,
         availableVotingPower,
       ] = await Promise.all([
-        contractService.getNSIBalance(address).catch(err => {
+        tokenStakingService.getNSIBalance(address).catch(err => {
           errorLogger.log('useBlockchain', err, { method: 'getNSIBalance', address });
           return BigInt(0);
         }),
-        contractService.getStakedBalance(address).catch(err => {
+        tokenStakingService.getStakedBalance(address).catch(err => {
           errorLogger.log('useBlockchain', err, { method: 'getStakedBalance', address });
           return BigInt(0);
         }),
-        contractService.getVotingPower(address).catch(err => {
+        tokenStakingService.getVotingPower(address).catch(err => {
           errorLogger.log('useBlockchain', err, { method: 'getVotingPower', address });
           return BigInt(0);
         }),
-        contractService.getAvailableVotingPower(address).catch(err => {
+        tokenStakingService.getAvailableVotingPower(address).catch(err => {
           errorLogger.log('useBlockchain', err, { method: 'getAvailableVotingPower', address });
           return BigInt(0);
         }),
@@ -93,7 +93,7 @@ export function useBlockchain(): UseBlockchainReturn {
       // Fetch unbonding requests separately since it might not exist yet
       let unbondingRequests: any[] = [];
       try {
-        unbondingRequests = await contractService.getUnbondingRequests(address);
+        unbondingRequests = await tokenStakingService.getUnbondingRequests(address);
       } catch (error) {
         errorLogger.log('useBlockchain', error, { method: 'getUnbondingRequests', address });
         unbondingRequests = [];
@@ -139,7 +139,7 @@ export function useBlockchain(): UseBlockchainReturn {
     }));
     
     try {
-      const result = await contractService.wrapTokens(amount);
+      const result = await tokenStakingService.wrapTokens(amount);
       
       setState(prev => ({
         ...prev,
@@ -185,7 +185,7 @@ export function useBlockchain(): UseBlockchainReturn {
     }));
     
     try {
-      const result = await contractService.requestUnwrap(amount);
+      const result = await tokenStakingService.requestUnwrap(amount);
       
       setState(prev => ({
         ...prev,
@@ -231,7 +231,7 @@ export function useBlockchain(): UseBlockchainReturn {
     }));
     
     try {
-      const result = await contractService.completeUnwrap(requestIndex);
+      const result = await tokenStakingService.completeUnwrap(requestIndex);
       
       setState(prev => ({
         ...prev,

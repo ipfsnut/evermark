@@ -1,7 +1,7 @@
 // src/hooks/useRewards.ts
 import { useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
-import { contractService } from '../services/blockchain';
+import { evermarkRewardsService } from '../services/blockchain';
 import { errorLogger } from '../utils/error-logger';
 
 export function useRewards() {
@@ -21,7 +21,7 @@ export function useRewards() {
     setError(null);
     
     try {
-      const rewards = await contractService.getPendingRewards(address);
+      const rewards = await evermarkRewardsService.getPendingRewards(address);
       setPendingRewards(rewards);
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to fetch rewards';
@@ -41,7 +41,7 @@ export function useRewards() {
     setClaimSuccess(false);
     
     try {
-      const { wait } = await contractService.claimRewards();
+      const { wait } = await evermarkRewardsService.claimRewards();
       await wait();
       
       // Refresh rewards after successful claim
@@ -66,7 +66,7 @@ export function useRewards() {
     setError(null);
     
     try {
-      const { wait } = await contractService.updateStakingPower();
+      const { wait } = await evermarkRewardsService.updateStakingPower();
       await wait();
       
       // Refresh rewards after updating staking power
