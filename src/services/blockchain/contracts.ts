@@ -199,8 +199,10 @@ class ContractService {
         // Recreate the contract with the new provider
         // This step is necessary after provider switch
         if (this.contracts.has(`${contract.target.toString().toLowerCase()}_provider`)) {
-          contract = this.getContract(contract.target.toString(), contract.interface.fragments);
-        }
+        // Fix: Convert readonly fragments to a mutable array using spread operator
+        const fragments = [...contract.interface.fragments];
+        contract = this.getContract(contract.target.toString(), fragments);
+      }
         
         // Add a small delay before retry
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -476,32 +478,32 @@ class ContractService {
    * Mint new bookmark (evermark)
    */
   async mintEvermark(to: string, metadataUri: string, title: string, author: string) {
-    try {
-      const signer = await this.getSigner();
-      const formattedTo = ethers.getAddress(to);
-      
-      const contract = this.getContract(
-        CONTRACT_ADDRESSES.BOOKMARK_NFT,
-        BookmarkNFTABI,
-        signer
-      );
-      
-      const tx = await contract.mintBookmarkFor(
-        formattedTo,
-        metadataUri,
-        title,
-        author // This is "contentCreator" in the contract
-      );
-      
-      return {
-        hash: tx.hash,
-        wait: () => tx.wait(),
-      };
-    } catch (error: any) {
-      errorLogger.log('contractService', error, { method: 'mintEvermark', to });
-      throw new Error(`Failed to mint evermark: ${error.message}`);
-    }
+  try {
+    const signer = await this.getSigner();
+    // We don't need formattedTo here as mintBookmark uses msg.sender
+    
+    const contract = this.getContract(
+      CONTRACT_ADDRESSES.BOOKMARK_NFT,
+      BookmarkNFTABI,
+      signer
+    );
+    
+    // Use mintBookmark instead of mintBookmarkFor
+    const tx = await contract.mintBookmark(
+      metadataUri,
+      title,
+      author // This is "contentCreator" in the contract
+    );
+    
+    return {
+      hash: tx.hash,
+      wait: () => tx.wait(),
+    };
+  } catch (error: any) {
+    errorLogger.log('contractService', error, { method: 'mintEvermark' });
+    throw new Error(`Failed to mint evermark: ${error.message}`);
   }
+}
   
   /**
    * Get bookmark (evermark) data
