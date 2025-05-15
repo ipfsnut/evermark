@@ -1,154 +1,142 @@
-# Evermark Development - Updated Progress (May 11, 2025)
+# Evermark Development - Updated Priority List (May 15, 2025)
 
 ## ✅ COMPLETED
 
-### Blockchain Integration
-- [x] Translation Service: Maps Evermark ↔ Bookmark terminology
-- [x] Blockchain Contracts Service: All 6 contracts integrated
-- [x] IPFS Service: Metadata storage with Pinata
-- [x] Create Evermark Flow: IPFS → NFT → Database
-- [x] Fetch Evermark Flow: Blockchain first, database as cache
-- [x] Complete Evermark Service: Unified API
+### Core Infrastructure
+- [x] Project setup with React, TypeScript, Tailwind CSS
+- [x] Wallet integration with Wagmi
+- [x] Farcaster Frame integration
+- [x] Basic routing and layout structure
+- [x] Error logging and monitoring utilities
 
-### Backend & Functions
-- [x] Fixed all TypeScript errors in contracts.ts, fetch.ts, useBlockchain.ts
-- [x] Created complete Netlify functions:
-  - [x] auth.ts - Wallet authentication
-  - [x] evermarks.ts - Evermark CRUD
-  - [x] blockchain-sync.ts - Event syncing
-  - [x] voting.ts - Voting operations
-  - [x] Scheduled functions for sync/voting
-- [x] Fixed environment variable handling for both browser/Node.js
-- [x] Updated database types with sync_status table
+### Blockchain Integration Layer
+- [x] Contract service architecture with error handling
+- [x] All contract ABIs imported and configured:
+  - [x] BookmarkNFT (Evermark creation)
+  - [x] BookmarkVoting (Vote delegation)
+  - [x] BookmarkRewards (Staking rewards)
+  - [x] BookmarkLeaderboard (Content rankings)
+  - [x] BookmarkAuction (NFT marketplace)
+  - [x] CardCatalog (Token staking)
+- [x] Contract methods defined in services layer
 
-### Frontend
-- [x] Complete React application with routing
-- [x] HomePage - Browse and discover Evermarks
-- [x] CreateEvermarkPage - Form with auto-detection
-- [x] MyEvermarksPage - Personal dashboard
-- [x] EvermarkDetailPage - View and vote on individual Evermarks
-- [x] ProfilePage - Token management and staking
-- [x] Responsive design with Tailwind CSS
-- [x] Full wallet integration with authentication
+### UI Components & Pages
+- [x] Basic layout with library theme
+- [x] Authentication (wallet connection)
+- [x] Homepage with recent Evermarks
+- [x] Basic Evermark creation flow
+- [x] Evermark detail view
+- [x] My Evermarks page
+- [x] Initial Profile page with basic staking
 
-### Architecture
-- [x] Hybrid approach implemented (Blockchain + Database)
-- [x] Graceful degradation for IPFS/Supabase failures
-- [x] Contract ABIs and addresses configured
-- [x] Type system fully implemented
+### Backend Services
+- [x] Netlify functions architecture
+- [x] Auth function (wallet authentication)
+- [x] IPFS upload function
+- [x] Basic database integration
 
 ## 🔄 IN PROGRESS
 
-### Testing & Refinement
-- [ ] End-to-end testing of create → display → vote flow
-- [ ] User experience testing and refinement
-- [ ] Performance optimization
+### Contract Integration Gaps
+- [ ] **BookmarkVoting**: Enhance voting UI beyond basic functionality
+  - [ ] Full voting power allocation
+  - [ ] Vote history and analytics
+  - [ ] Cycle timing information
 
-## 📋 NEXT PHASE: DEPLOYMENT & ENHANCEMENT
+### Local Caching & Fallbacks
+- [ ] Improve local storage caching strategies
+- [ ] Enhance offline support
+- [ ] Better failure handling for network issues
 
-### Week 1: Deployment
-1. **Production Deployment**
-   - [ ] Set up production environment variables in Netlify
-   - [ ] Configure custom domain
-   - [ ] Set up monitoring and error tracking
-   - [ ] Deploy to production
+## 📋 NEXT PRIORITIES
 
-2. **Final Testing**
-   - [ ] Test all flows in production
-   - [ ] Verify blockchain transactions
-   - [ ] Check IPFS metadata storage
-   - [ ] Validate Netlify functions
+### 1. Complete BookmarkLeaderboard Integration (High Priority)
+- [ ] Create Leaderboard page
+- [ ] Display top Evermarks by voting cycle
+- [ ] Show user's content ranking
+- [ ] Weekly leaderboard history view
+- [ ] Cycle timing information
+- [ ] Connect to existing contract methods:
+  - [ ] getWeeklyTopBookmarks
+  - [ ] getBookmarkRankForWeek
+  - [ ] isLeaderboardFinalized
 
-### Week 2: Polish & Features
-1. **UI/UX Improvements**
-   - [ ] Add loading states for better UX
-   - [ ] Implement toast notifications
-   - [ ] Add confirmation modals for blockchain transactions
-   - [ ] Improve mobile responsiveness
+### 2. Implement BookmarkRewards System (High Priority)
+- [ ] Add rewards section to Profile page
+- [ ] Build rewards claiming interface
+- [ ] Display pending and claimed rewards history
+- [ ] Implement automatic rewards update functionality
+- [ ] Connect to existing contract methods:
+  - [ ] getPendingRewards
+  - [ ] claimRewards
+  - [ ] updateStakingPower
 
-2. **Feature Enhancements**
-   - [ ] Search and filtering functionality
-   - [ ] Batch operations for multiple Evermarks
-   - [ ] Social features (comments, shares)
-   - [ ] Analytics dashboard
+### 3. Build BookmarkAuction Marketplace (Medium Priority)
+- [ ] Create Auction listing page
+- [ ] Build auction creation interface
+- [ ] Implement bidding functionality
+- [ ] Add auction management for sellers
+- [ ] Build auction detail views
+- [ ] Connect to existing contract methods:
+  - [ ] createAuction
+  - [ ] placeBid
+  - [ ] finalizeAuction
+  - [ ] cancelAuction
+  - [ ] getAuctionDetails
+  - [ ] getActiveAuctions
 
-### Week 3+: Advanced Features
-1. **Extended Functionality**
-   - [ ] Auction system integration
-   - [ ] Leaderboard displays
-   - [ ] Rewards claiming interface
-   - [ ] Advanced search with filters
-   - [ ] Collection/playlist features
+### 4. Enhance CardCatalog Features (Medium Priority)
+- [ ] Improve staking interface
+- [ ] Add visualization for voting power allocation
+- [ ] Implement token staking analytics
+- [ ] Build unbonding request management UI
+- [ ] Connect to complete set of existing methods:
+  - [ ] wrapTokens (staking)
+  - [ ] requestUnwrap (unbonding)
+  - [ ] completeUnwrap (claiming)
+  - [ ] getUnbondingRequests (viewing)
 
-2. **Optimization**
-   - [ ] Implement caching strategies
-   - [ ] Add service worker for offline support
-   - [ ] Optimize image loading and IPFS fetching
-   - [ ] Bundle size optimization
+## 🧪 TESTING & REFINEMENT
 
-## 🚀 DEPLOYMENT CHECKLIST
+### Integration Testing
+- [ ] Test BookmarkNFT and Content Creation
+- [ ] Test BookmarkVoting and Power Allocation
+- [ ] Test BookmarkRewards Claiming Flow
+- [ ] Test BookmarkLeaderboard Display and Updates
+- [ ] Test BookmarkAuction Creation and Bidding
+- [ ] Test CardCatalog Staking and Unbonding
 
-### Environment Setup
-- [ ] All secrets added to Netlify environment:
-  - [ ] SUPABASE_SERVICE_KEY
-  - [ ] VITE_SUPABASE_URL
-  - [ ] VITE_SUPABASE_ANON_KEY
-  - [ ] VITE_PINATA_API_KEY
-  - [ ] VITE_PINATA_SECRET_KEY
-  - [ ] SYNC_SECRET
+### UI/UX Improvements
+- [ ] Loading states for all blockchain operations
+- [ ] Consistent error handling throughout UI
+- [ ] Mobile responsiveness for all new interfaces
+- [ ] Improved animations and transitions
 
-### Production Verification
-- [ ] Wallet connection works
-- [ ] Evermark creation completes end-to-end
-- [ ] Voting transactions succeed
-- [ ] IPFS metadata accessible
-- [ ] Database caching functional
-- [ ] Scheduled functions running
+## 🚀 DEPLOYMENT STEPS
 
-## 🔧 TECHNICAL DEBT & IMPROVEMENTS
+### Environment Configuration
+- [ ] Configure production environment variables
+- [ ] Set up monitoring for contract interactions
+- [ ] Implement error tracking service
 
-### Code Quality
-- [ ] Add unit tests for all services
-- [ ] Add integration tests for critical paths
-- [ ] Implement error boundaries
-- [ ] Add proper PropTypes/TypeScript for all components
+### Staged Rollout
+- [ ] Deploy core functionality (NFT + Voting)
+- [ ] Add Leaderboard and Rewards features
+- [ ] Implement Auction marketplace
+- [ ] Complete with advanced staking features
 
-### Documentation
-- [ ] Add API documentation for Netlify functions
-- [ ] Create deployment guide
-- [ ] Write user documentation
-- [ ] Document blockchain integration patterns
+## 📈 SUCCESS METRICS
 
-### Security
-- [ ] Audit smart contract interactions
-- [ ] Review authentication flow
-- [ ] Implement rate limiting
-- [ ] Add input validation everywhere
+- [ ] Complete integration of all 6 contract ABIs
+- [ ] End-to-end testing of all blockchain interactions
+- [ ] Zero TypeScript errors or console warnings
+- [ ] Smooth UX with proper loading/error states
+- [ ] Mobile-responsive UI for all features
 
-## 🎯 SUCCESS METRICS
+## 🔧 TECHNICAL DEBT
 
-- ✅ Create Evermark works end-to-end
-- ✅ Data displays correctly from blockchain
-- ✅ IPFS metadata accessible
-- ✅ Vote delegation functional
-- ✅ No TypeScript errors
-- ✅ Responsive UI works on all devices
-- [ ] Production deployment successful
-- [ ] Real users can create and vote on Evermarks
-- [ ] Analytics show active usage
-
----
-
-## 📈 CURRENT STATUS: READY FOR TESTING & DEPLOYMENT
-
-**NEXT IMMEDIATE STEPS**:
-1. Deploy to Netlify production
-2. Test all flows with real wallet/tokens
-3. Fix any production-specific issues
-4. Launch to initial users
-
-**BLOCKERS RESOLVED**:
-✅ All TypeScript errors fixed
-✅ Environment variables properly configured
-✅ Frontend fully implemented
-✅ Netlify functions operational
+- [ ] Add comprehensive unit tests for services
+- [ ] Create component tests for UI elements
+- [ ] Improve documentation
+- [ ] Optimize for performance with large datasets
+- [ ] Add analytics to track user engagement
