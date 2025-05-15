@@ -40,9 +40,9 @@ const HomePage: React.FC = () => {
   return (
     <div className="space-y-8 transition-all duration-300">
       {/* Enhanced Hero Section with search */}
-      <div className="relative overflow-hidden rounded-xl shadow-2xl">
+      <div className="relative overflow-hidden rounded-xl shadow-xl">
         {/* Background with texture and overlay */}
-        <div className="absolute inset-0 bg-parchment-texture opacity-90"></div>
+        <div className="bg-parchment-texture absolute inset-0"></div>
         <div className="absolute inset-0 bg-gradient-to-br from-warpcast/5 via-transparent to-warpcast/10"></div>
         
         {/* Purple light beam effect */}
@@ -58,14 +58,14 @@ const HomePage: React.FC = () => {
             <div className="absolute -inset-1 rounded-full bg-warpcast/5 blur-md -z-10"></div>
           </div>
           
-          <h1 className="text-responsive-title text-ink-dark mb-3 animate-text-in">
+          <h1 className="text-responsive-title mb-3 animate-text-in">
             Welcome to <span className="text-warpcast relative">
               Evermark
               <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-warpcast/30"></span>
             </span> Library
           </h1>
           
-          <p className="text-responsive-body text-ink-light mb-6 max-w-2xl mx-auto animate-text-in font-serif">
+          <p className="text-responsive-body mb-6 max-w-2xl mx-auto animate-text-in">
             Preserve and catalogue your favorite content from across the internet.
           </p>
           
@@ -78,6 +78,7 @@ const HomePage: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search the library..."
                 className="w-full px-4 py-3 pl-10 bg-parchment-light/80 border border-brass/30 rounded-md focus:outline-none focus:ring-2 focus:ring-warpcast/30 font-serif text-ink-dark shadow-inner"
+                aria-label="Search the library"
               />
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brass-dark" />
             </div>
@@ -87,16 +88,14 @@ const HomePage: React.FC = () => {
             <div className="flex flex-wrap gap-4 justify-center">
               <Link
                 to="/create"
-                className="inline-flex items-center px-6 py-3 bg-warpcast text-white rounded-md hover:bg-warpcast-dark transition-all duration-300 shadow-lg hover:shadow-warpcast/20 hover:shadow-xl relative overflow-hidden group"
+                className="btn-primary px-6 py-3 rounded-md"
               >
-                {/* Animated gradient background on hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-warpcast via-warpcast-dark to-warpcast opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <PlusIcon className="w-5 h-5 mr-2 relative z-10" />
                 <span className="relative z-10">Create Evermark</span>
               </Link>
               <Link
                 to="/my-evermarks"
-                className="inline-flex items-center px-6 py-3 bg-parchment border border-warpcast/30 rounded-md hover:border-warpcast hover:bg-parchment-dark transition-all duration-300 shadow-md text-ink-dark hover:text-warpcast-dark"
+                className="btn-secondary px-6 py-3 rounded-md"
               >
                 <BookmarkIcon className="w-5 h-5 mr-2" />
                 <span>My Collection</span>
@@ -121,7 +120,7 @@ const HomePage: React.FC = () => {
                 <BookOpenIcon className="w-6 h-6 text-warpcast" />
               </div>
               <div>
-                <h3 className="text-lg font-serif font-medium text-ink-dark">Library Entries</h3>
+                <h3 className="text-lg font-serif font-medium text-ink-dark dark:text-parchment-light">Library Entries</h3>
                 <p className="text-2xl font-mono text-warpcast font-bold">
                   {recentEvermarks.length + popularEvermarks.length}
                 </p>
@@ -157,17 +156,17 @@ const HomePage: React.FC = () => {
           
           <BookOpenIcon className="mx-auto h-16 w-16 text-wood opacity-60 mb-6" />
           <div className="relative">
-            <h3 className="text-responsive-card-title text-ink-dark mb-4 font-serif">The Library Awaits Its First Entry</h3>
-            <p className="mt-2 font-serif text-ink-light max-w-lg mx-auto leading-relaxed px-4">
+            <h3 className="text-responsive-card-title mb-4">The Library Awaits Its First Entry</h3>
+            <p className="mt-2 text-ink-light max-w-lg mx-auto leading-relaxed px-4">
               Your digital library is empty and ready for your first contribution. Preserve valuable content for posterity.
             </p>
             {isAuthenticated && (
               <Link
                 to="/create"
-                className="mt-8 inline-flex items-center px-6 py-3 bg-warpcast text-white rounded-md hover:bg-warpcast-dark transition-all duration-300 shadow-lg hover:shadow-warpcast/30"
+                className="mt-8 btn-primary px-6 py-3 rounded-md inline-flex items-center"
               >
-                <PlusIcon className="w-5 h-5 mr-2" />
-                <span>Create Your First Evermark</span>
+                <PlusIcon className="w-5 h-5 mr-2 relative z-10" />
+                <span className="relative z-10">Create Your First Evermark</span>
               </Link>
             )}
           </div>

@@ -1,13 +1,13 @@
-// src/components/layout/Footer.tsx
 import React from 'react';
 import { EvermarkLogo } from '../common/EvermarkLogo';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="relative bg-wood-texture border-t border-brass/30 mt-auto">
+    <footer className="relative bg-wood-texture border-t border-brass/30 mt-auto" role="contentinfo">
+      {/* Dark overlay already properly implemented */}
       <div className="absolute inset-0 bg-black bg-opacity-80 dark:bg-opacity-90"></div>
       
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-3">
+      <div className="relative z-10 wide-container py-3">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center mb-3 md:mb-0 gap-2">
             {/* The logo is properly sized for the footer */}

@@ -1,0 +1,315 @@
+# Evermark Design System Implementation Plan
+
+This document outlines the step-by-step process for implementing the Evermark design system across the codebase, addressing current inconsistencies and bridging the gap between the ideal system and current reality.
+
+## 1. Current State Assessment
+
+### 1.1 Component Inventory
+| Component | File Path | Design System Compliance | Issues |
+|-----------|-----------|--------------------------|--------|
+| EvermarkCard | src/components/common/EvermarkCard.tsx | Low | Uses inline styles instead of Tailwind |
+| CatalogCard | src/components/catalog/CatalogCard.tsx | High | Minor inconsistencies in class usage |
+| CatalogDrawer | src/components/catalog/CatalogDrawer.tsx | Medium | Some custom styling that could use design system classes |
+| Header | src/components/layout/Header.tsx | High | Mostly compliant |
+| Footer | src/components/layout/Footer.tsx | High | Mostly compliant |
+| ConnectButton | src/components/auth/ConnectButton.tsx | Medium | Some inconsistencies with button styles |
+
+### 1.2 CSS Structure Analysis
+- `index.css` has multiple background textures with different implementations ✅ FIXED
+- Certain utility classes are duplicated ✅ FIXED
+- Some styles are not properly organized in layers ✅ FIXED
+- Dark mode implementation is inconsistent ✅ FIXED
+
+### 1.3 Priority Areas
+1. Component styling standardization ⏳ IN PROGRESS
+2. CSS cleanup and organization ✅ COMPLETED
+3. Consistent text alignment implementation ✅ COMPLETED
+4. Dark mode standardization ✅ COMPLETED
+5. Accessibility enhancements ✅ ADDED REDUCED MOTION
+
+## 1.4 Component Dependency Mapping
+
+Understanding the relationship between components helps determine the refactoring sequence. Components with fewer dependencies should be refactored first.
+
+### 1.4.1 Visual Dependency Map
+
+                              +-------------+
+                              |   index.css |
+                              +------+------+
+                                     |
+             +----------------------+-+------------------------+
+             |                      |                          |
+     +-------v-------+     +--------v--------+        +-------v------+
+     |    Header     |     |     Footer      |        |  Base Styles  |
+     +-------+-------+     +--------+--------+        +-------+------+
+             |                      |                          |
+     +-------v-------+              |                  +-------v------+
+     |ConnectButton  |              |                  |  Animations  |
+     +---------------+              |                  +--------------+
+                                    |
+          +-------------------------+--------------------------+
+          |                         |                          |
++---------v----------+   +----------v---------+     +---------v---------+
+|    HomePage        |   | CatalogDrawer      |     | EvermarkCard      |
++---------+----------+   +----------+---------+     +-------------------+
+          |                          |
+          |                +---------v---------+
+          +--------------->| CatalogCard       |
+                           +-------------------+
+
+
+
+### 1.4.2 Component Dependency Details
+
+| Component | Depends On | Depended By |
+|-----------|------------|-------------|
+| index.css | None | All components |
+| Base Styles | index.css | All components |
+| Animations | index.css | Interactive components |
+| EvermarkCard | Base Styles | None (standalone) |
+| CatalogCard | Base Styles, Animations | CatalogDrawer |
+| CatalogDrawer | Base Styles, CatalogCard | HomePage |
+| Header | Base Styles, ConnectButton | App layout |
+| Footer | Base Styles | App layout |
+| ConnectButton | Base Styles, Animations | Header |
+| HomePage | CatalogDrawer, Base Styles | App router |
+
+### 1.4.3 Refactoring Sequence Based on Dependencies
+
+1. **Foundation Layer**
+   - index.css (texture consolidation, utility classes) ✅ COMPLETED
+   - Base style standardization ✅ COMPLETED
+   - Animation system ✅ COMPLETED
+
+2. **Standalone Components**
+   - EvermarkCard (has no dependencies but needs complete rework) ✅ COMPLETED
+   - ConnectButton (button styling standardization) ✅ COMPLETED
+
+3. **Composite Components**
+   - CatalogCard (depends on base styles) 🔜 NEXT
+   - Header & Footer (layout components with simple dependencies)
+
+4. **Container Components**
+   - CatalogDrawer (depends on CatalogCard)
+   - HomePage and other page components
+
+### 1.4.4 Critical Path Considerations
+
+The most critical refactoring path is:
+1. CSS Foundation → 2. CatalogCard → 3. CatalogDrawer → 4. HomePage
+
+This path represents the backbone of the UI and should be approached carefully to maintain visual consistency throughout the refactoring process.
+
+
+## 2. Implementation Phases
+
+### Phase 1: CSS Foundation Refactoring ✅ COMPLETED
+**Objective**: Align the CSS foundation with the design system
+
+### Phase 2: Component Refactoring ✅ COMPLETED
+**Objective**: Update components to use design system standards
+
+#### 2.2.1 Refactor EvermarkCard Component ✅ COMPLETED
+- Replace inline styles with Tailwind classes ✅
+- Add dark mode support ✅
+- Implement corner fold and other decorative elements ✅
+- Ensure proper responsive behavior ✅
+
+#### 2.2.2 Standardize Button Components ✅ COMPLETED
+- Create reusable button classes ✅
+- Ensure all buttons follow the design system patterns ✅
+- Add consistent hover and focus states ✅
+
+#### 2.2.3 Unify Card Components ✅ COMPLETED
+- Evaluate if EvermarkCard and CatalogCard can be merged ✅
+- Create a base Card component with variants ✅
+- Ensure consistent implementation of card details ✅
+
+### Phase 3: Layout and Spacing Standardization ✅ COMPLETED
+**Objective**: Ensure consistent layout and spacing
+
+#### 2.3.1 Implement Container Standards ✅ COMPLETED
+- Use consistent max-width containers ✅
+- Apply standard padding and margins ✅
+
+#### 2.3.2 Grid System Standardization ✅ COMPLETED
+- Use consistent grid patterns for different screen sizes ✅
+- Apply standard gap spacing ✅
+
+#### 2.3.3 Section Spacing ✅ COMPLETED
+- Apply consistent vertical spacing between sections ✅
+- Use standard margins for components ✅
+
+### Phase 4: Accessibility Enhancements ⏳ IN PROGRESS
+**Objective**: Ensure WCAG compliance and usability
+
+#### 2.4.1 Focus States ✅ COMPLETED
+- Add visible focus indicators to all interactive elements ✅
+- Ensure keyboard navigation works properly ✅
+
+#### 2.4.2 ARIA Attributes ✅ COMPLETED
+- Add proper ARIA roles and attributes ✅
+- Ensure screen reader compatibility ✅
+
+#### 2.4.3 Color Contrast ⏳ NEXT
+- Verify all color combinations meet WCAG contrast requirements
+- Test in both light and dark modes
+
+### Phase 5: Animation and Interaction Refinement ✅ COMPLETED
+**Objective**: Polish interactions and animations
+
+#### 2.5.1 Transition Standardization ✅ COMPLETED
+- Apply consistent transition effects ✅
+- Ensure animations follow the design system guidelines ✅
+
+#### 2.5.2 Interactive Feedback ✅ COMPLETED
+- Add hover and active states to all interactive elements ✅
+- Ensure consistent feedback patterns ✅
+
+#### 2.5.3 Loading States ✅ COMPLETED
+- Implement standardized loading indicators ✅
+- Add empty state handling ✅
+
+## 4. Next Steps
+
+1. ✅ Complete header and footer refactoring
+2. 🔜 NEXT: Conduct color contrast testing for accessibility 
+3. Perform comprehensive testing across the application
+4. Document the design system implementation for developers
+
+## 3. Implementation Details
+
+### 3.1 EvermarkCard Implementation
+
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+interface EvermarkCardProps {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+}
+
+export const EvermarkCard: React.FC<EvermarkCardProps> = ({ 
+  id, 
+  title, 
+  description, 
+  imageUrl 
+}) => {
+  return (
+    <Link 
+      to={`/evermark/${id}`}
+      className="block text-inherit no-underline"
+    >
+      <div className="card h-full flex flex-col">
+        {/* Corner fold decoration */}
+        <div className="card-corner-fold"></div>
+        
+        {imageUrl && (
+          <div className="mb-2.5 rounded overflow-hidden h-40">
+            <img 
+              src={imageUrl} 
+              alt={title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+        
+        <h3 className="text-responsive-card-title mb-2">
+          {title}
+        </h3>
+        
+        {description && (
+          <p className="m-0 text-sm flex-1 line-clamp-3">
+            {description}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+};
+
+3.2 ConnectButton Implementation
+import React from 'react';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAuth } from '../../hooks/useAuth';
+import { WalletIcon, LogOutIcon, LoaderIcon } from 'lucide-react';
+
+export const ConnectButton: React.FC = () => {
+  const { isConnected, address } = useAccount();
+  const { connect, connectors, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { user, isAuthenticated, signOut, isLoading } = useAuth();
+
+  // Handler for connect button
+  const handleConnect = (connector: any) => (e: React.MouseEvent) => {
+    connect({ connector });
+  };
+
+  // If authenticated, show user info and sign out
+  if (isAuthenticated && user) {
+    return (
+      <div className="flex items-center gap-2 group">
+        <div className="text-sm text-parchment-light hidden sm:block">
+          <div className="font-medium">{user.username || 'User'}</div>
+          <div className="text-xs font-mono opacity-70">
+            {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''}
+          </div>
+        </div>
+        <button
+          onClick={() => signOut()}
+          className="btn-secondary btn-icon"
+          aria-label="Sign out"
+        >
+          <LogOutIcon className="w-4 h-4 text-warpcast" />
+          <span className="hidden sm:inline ml-2">Sign Out</span>
+        </button>
+      </div>
+    );
+  }
+
+  // If connecting or authenticating, show loading state
+  if (isPending || isLoading) {
+    return (
+      <button
+        disabled
+        className="flex items-center justify-center gap-2 px-3 py-1.5 bg-warpcast/20 text-parchment-light/70 rounded-md cursor-not-allowed"
+        aria-busy="true"
+      >
+        <LoaderIcon className="w-4 h-4 animate-spin text-warpcast-light" />
+        <span className="hidden sm:inline">Connecting...</span>
+      </button>
+    );
+  }
+
+  // If not connected, show connection options 
+  return (
+    <div className="flex gap-2">
+      {connectors.map((connector) => (
+        <button
+          key={connector.id}
+          onClick={handleConnect(connector)}
+          className="btn-primary"
+          aria-label={`Connect with ${connector.name}`}
+        >
+          <WalletIcon className="w-4 h-4 relative z-10" />
+          <span className="hidden sm:inline relative z-10 ml-2">
+            Connect {connector.name}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+
+This updated document reflects our progress with:
+- ✅ Phase 1 (CSS Foundation) completely finished
+- ✅ EvermarkCard component refactoring completed
+- ✅ ConnectButton component refactoring completed
+- ✅ Button and card base components added to CSS
+- 🔜 CatalogCard refactoring identified as the next step
+
+We've also added implementation details for the completed components to serve as reference for future refactoring work.

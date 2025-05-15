@@ -49,18 +49,18 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
       />
       
       {/* Main content - enhanced with subtle background texture */}
-      <main className="flex-1 relative">
-        {/* Subtle parchment background texture */}
-        <div className="absolute inset-0 bg-parchment-texture opacity-30 dark:opacity-5 pointer-events-none"></div>
-        
-        {/* Content container with page-turn animation */}
-        <div 
-          key={location.pathname}
-          className="relative z-10 max-w-6xl mx-auto px-4 py-6 sm:py-8 animate-page-in"
-        >
-          {children}
-        </div>
-      </main>
+      <main className="flex-1 relative bg-parchment-light dark:bg-ink-dark transition-colors duration-300">
+  {/* Subtle parchment background texture */}
+  <div className="absolute inset-0 bg-parchment-texture opacity-30 dark:opacity-5 pointer-events-none"></div>
+  
+  {/* Content container with page-turn animation */}
+  <div 
+    key={location.pathname}
+    className="relative z-10 content-container py-6 sm:py-8 animate-page-in"
+  >
+    {children}
+  </div>
+</main>
       
       {/* Use the Footer component */}
       <Footer />
@@ -70,6 +70,7 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
       />
     </div>
   );

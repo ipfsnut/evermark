@@ -30,16 +30,15 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="relative bg-wood-texture border-b border-brass/30 shadow-md z-20">
-      {/* Dark overlay for better text contrast */}
-      <div className="absolute inset-0 bg-black bg-opacity-70 dark:bg-opacity-80"></div>
+    <header className="relative bg-wood-texture border-b border-brass/30 shadow-md z-20" role="banner">
+      {/* Content within the header is already properly organized with z-index */}
       
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-2 flex justify-between items-center">
+      <div className="relative z-10 wide-container py-2 flex justify-between items-center">
         {/* Left side with menu and logo */}
         <div className="flex items-center">
           <button 
             onClick={onMenuOpen}
-            className="p-1.5 mr-3 rounded-full text-parchment-light hover:bg-black/20 transition-colors"
+            className="btn-icon text-parchment-light"
             aria-label="Open menu"
           >
             <MenuIcon className="h-5 w-5" />
@@ -67,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Theme toggle */}
           <button
             onClick={toggleDarkMode}
-            className="p-1.5 rounded-full text-parchment-light hover:bg-black/20 transition-colors"
+            className="btn-icon text-parchment-light"
             aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
           >
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}

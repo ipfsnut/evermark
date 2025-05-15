@@ -28,21 +28,21 @@ export const CatalogDrawer: React.FC<CatalogDrawerProps> = ({
   
   return (
     <div className={`mb-8 transition-all duration-300 ${className}`}>
-      {/* Drawer header - modernized with warpcast accent */}
+      {/* Drawer header - using our standardized drawer-header class */}
       <div 
-        className={`bg-wood-texture p-4 rounded-t-lg flex justify-between items-center shadow-lg relative ${
-          collapsible ? 'cursor-pointer' : ''
-        }`}
+        className={`drawer-header ${collapsible ? 'cursor-pointer' : ''}`}
         onClick={() => collapsible && setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-controls="drawer-content"
       >
         {/* Accent gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-wood-dark/80 to-wood-dark/50 rounded-t-lg"></div>
+        <div className="drawer-header-overlay"></div>
         
         {/* Purple accent line */}
-        <div className="absolute top-0 left-0 h-1 w-1/3 bg-gradient-to-r from-warpcast to-warpcast/0 rounded-tl-lg"></div>
+        <div className="drawer-header-accent"></div>
         
         {/* Title with icon */}
-        <h2 className="font-serif text-xl tracking-wide text-parchment-light relative z-10 flex items-center">
+        <h2 className="font-serif text-xl tracking-wide text-parchment-light relative z-10 flex items-center" id="drawer-title">
           <BookOpenIcon className="w-5 h-5 mr-2 text-warpcast-light" />
           {title}
         </h2>
@@ -57,6 +57,7 @@ export const CatalogDrawer: React.FC<CatalogDrawerProps> = ({
                 onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest')}
                 className="bg-transparent text-parchment-light border-none focus:ring-0 text-sm py-0.5 cursor-pointer"
                 onClick={(e) => e.stopPropagation()}
+                aria-label="Sort order"
               >
                 <option value="newest" className="text-ink-dark">Newest First</option>
                 <option value="oldest" className="text-ink-dark">Oldest First</option>
@@ -72,7 +73,7 @@ export const CatalogDrawer: React.FC<CatalogDrawerProps> = ({
           
           {collapsible && (
             <button 
-              className="p-1 hover:bg-warpcast/20 rounded transition-colors"
+              className="btn-icon"
               aria-label={isOpen ? "Collapse drawer" : "Expand drawer"}
             >
               {isOpen ? (
@@ -85,9 +86,9 @@ export const CatalogDrawer: React.FC<CatalogDrawerProps> = ({
         </div>
       </div>
       
-      {/* Drawer content - parchment texture with tech accents */}
+      {/* Drawer content - using our standardized drawer-content class */}
       {isOpen && (
-        <div className="bg-parchment-texture p-5 rounded-b-lg transition-all duration-300 border-x border-b border-wood-light/30">
+        <div id="drawer-content" className="drawer-content" role="region" aria-labelledby="drawer-title">
           {sortedEvermarks.length === 0 ? (
             <div className="text-center py-10 italic text-ink-light border border-dashed border-wood-light bg-parchment-light bg-opacity-70 rounded">
               <p className="font-serif">This drawer is empty.</p>

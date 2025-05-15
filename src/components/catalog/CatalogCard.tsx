@@ -11,14 +11,11 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({ evermark }) => {
   return (
     <Link 
       to={`/evermark/${evermark.id}`}
-      className="block transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl group"
+      className="block transform transition-all duration-300 hover:-translate-y-2 group"
     >
-      <div 
-        className="relative h-full rounded-lg shadow-md overflow-hidden border border-wood-light/30 bg-index-card group-hover:border-brass/50"
-      >
+      <div className="card p-5 pb-4">
         {/* Decorative corner fold */}
-        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-amber-100 to-transparent pointer-events-none opacity-40"></div>
-        <div className="absolute top-0 right-0 w-0 h-0 border-t-16 border-r-16 border-t-brass/20 border-r-transparent pointer-events-none"></div>
+        <div className="card-corner-fold"></div>
         
         {/* Content type tab */}
         <div 
@@ -31,62 +28,54 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({ evermark }) => {
           </span>
         </div>
         
-        <div className="p-5 pb-4">
-          <h3 
-            className="font-serif font-semibold truncate text-lg text-ink-dark group-hover:text-warpcast-dark transition-colors duration-300"
-          >
-            {evermark.title}
-          </h3>
-          
-          <div className="flex items-center mt-1 text-ink-light">
-            <UserIcon className="w-3.5 h-3.5 mr-1.5 text-brass-dark" />
-            <p className="text-sm font-serif">
-              {evermark.author}
-            </p>
-          </div>
-          
-          <p 
-            className="text-sm mt-3 line-clamp-2 font-serif text-ink min-h-[40px]"
-          >
-            {evermark.description || 'No description available'}
+        <h3 className="text-responsive-card-title truncate group-hover:text-warpcast-dark transition-colors duration-300">
+          {evermark.title}
+        </h3>
+        
+        <div className="flex items-center mt-1 text-ink-light">
+          <UserIcon className="w-3.5 h-3.5 mr-1.5 text-brass-dark" />
+          <p className="text-sm font-serif">
+            {evermark.author}
           </p>
-          
-          <div className="mt-4 pt-3 border-t border-wood-light/20 flex items-center justify-between">
-            <div className="flex items-center text-xs text-ink-light/80">
-              <CalendarIcon className="w-3 h-3 mr-1" />
-              <span className="font-mono">
-                {new Date(evermark.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            
-            <div 
-              className="flex items-center text-xs text-brass-dark"
-            >
-              <SparklesIcon className="w-3 h-3 mr-1" />
-              <span className="font-mono">#{evermark.id.slice(0, 5)}</span>
-            </div>
+        </div>
+        
+        <p className="text-sm mt-3 line-clamp-2 min-h-[40px]">
+          {evermark.description || 'No description available'}
+        </p>
+        
+        <div className="mt-4 pt-3 border-t border-wood-light/20 flex items-center justify-between">
+          <div className="flex items-center text-xs text-ink-light/80">
+            <CalendarIcon className="w-3 h-3 mr-1" />
+            <span className="font-mono">
+              {new Date(evermark.createdAt).toLocaleDateString()}
+            </span>
           </div>
           
-          {/* Tags preview (if available) */}
-          {evermark.metadata?.tags && evermark.metadata.tags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1">
-              {evermark.metadata.tags.slice(0, 2).map(tag => (
-                <span 
-                  key={tag}
-                  className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-serif bg-amber-50 text-ink-light border border-amber-100"
-                >
-                  <TagIcon className="w-2 h-2 mr-0.5" />
-                  {tag}
-                </span>
-              ))}
-              {evermark.metadata.tags.length > 2 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-serif bg-amber-50 text-ink-light border border-amber-100">
-                  +{evermark.metadata.tags.length - 2}
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex items-center text-xs text-brass-dark">
+            <SparklesIcon className="w-3 h-3 mr-1" />
+            <span className="font-mono">#{evermark.id.slice(0, 5)}</span>
+          </div>
         </div>
+        
+        {/* Tags preview (if available) */}
+        {evermark.metadata?.tags && evermark.metadata.tags.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1">
+            {evermark.metadata.tags.slice(0, 2).map(tag => (
+              <span 
+                key={tag}
+                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-serif bg-amber-50 text-ink-light border border-amber-100"
+              >
+                <TagIcon className="w-2 h-2 mr-0.5" />
+                {tag}
+              </span>
+            ))}
+            {evermark.metadata.tags.length > 2 && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-serif bg-amber-50 text-ink-light border border-amber-100">
+                +{evermark.metadata.tags.length - 2}
+              </span>
+            )}
+          </div>
+        )}
         
         {/* External link badge */}
         {evermark.metadata?.external_url && (

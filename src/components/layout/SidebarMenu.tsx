@@ -1,12 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { XIcon, HomeIcon, PlusIcon, BookmarkIcon, UserIcon } from 'lucide-react';
+import { XIcon, HomeIcon, PlusIcon, BookmarkIcon, UserIcon, Sun, Moon } from 'lucide-react';
 
 interface SidebarMenuProps {
   isOpen: boolean;
   onClose: () => void;
   darkMode?: boolean;
+  toggleDarkMode?: () => void; 
 }
+
 
 // Define the correct type for the MenuLink props
 interface MenuLinkProps {
@@ -15,7 +17,7 @@ interface MenuLinkProps {
   label: string;
 }
 
-export const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onClose, darkMode = false }) => {
+export const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onClose, darkMode = false, toggleDarkMode }) => {
   if (!isOpen) return null;
   
   return (
@@ -45,7 +47,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onClose, darkM
       }} />
       
       {/* Content container */}
-      <div style={{ position: 'relative', padding: '20px' }}>
+      <div style={{ position: 'relative', padding: '20px', display: 'flex', flexDirection: 'column', height: 'calc(100% - 40px)' }}>
         {/* Close button */}
         <button 
           onClick={onClose}
@@ -92,7 +94,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onClose, darkM
           </span>
         </div>
         
-        <nav>
+        <nav style={{ flex: 1 }}>
           <ul style={{ 
             listStyle: 'none', 
             padding: 0,
@@ -106,6 +108,51 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onClose, darkM
             <MenuLink icon={<UserIcon size={18} />} to="/profile" label="Profile" />
           </ul>
         </nav>
+        
+        {/* Dark mode toggle - new addition */}
+        {toggleDarkMode && (
+          <div style={{
+            marginTop: 'auto', 
+            paddingTop: '20px',
+            borderTop: '1px solid rgba(240, 240, 240, 0.2)'
+          }}>
+            <button
+              onClick={toggleDarkMode}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                padding: '12px 16px',
+                background: 'none',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                color: '#f0f0f0',
+                textAlign: 'left',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {darkMode ? (
+                <>
+                  <Sun style={{ marginRight: '12px' }} size={18} />
+                  <span style={{ fontWeight: '500', fontSize: '16px' }}>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon style={{ marginRight: '12px' }} size={18} />
+                  <span style={{ fontWeight: '500', fontSize: '16px' }}>Dark Mode</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -17,68 +17,29 @@ export const EvermarkCard: React.FC<EvermarkCardProps> = ({
   return (
     <Link 
       to={`/evermark/${id}`}
-      style={{ textDecoration: 'none', color: 'inherit' }}
+      className="block text-inherit no-underline"
     >
-      <div style={{
-        backgroundImage: 'url("/textures/index-card.png")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        borderRadius: '6px',
-        padding: '15px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        marginBottom: '15px',
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        cursor: 'pointer',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-3px)';
-        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-      }}
-      >
+      <div className="card h-full flex flex-col">
+        {/* Corner fold decoration */}
+        <div className="card-corner-fold"></div>
+        
         {imageUrl && (
-          <div style={{
-            marginBottom: '10px',
-            borderRadius: '4px',
-            overflow: 'hidden',
-            height: '160px'
-          }}>
+          <div className="mb-2.5 rounded overflow-hidden h-40">
             <img 
               src={imageUrl} 
               alt={title}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
+              className="w-full h-full object-cover"
             />
           </div>
         )}
         
-        <h3 style={{
-          margin: '0 0 8px 0',
-          fontSize: '18px',
-          fontWeight: '600'
-        }}>
+        <h3 className="text-responsive-card-title mb-2">
           {title}
         </h3>
         
         {description && (
-          <p style={{
-            margin: '0',
-            fontSize: '14px',
-            color: '#555',
-            flex: '1'
-          }}>
-            {description.length > 100 
-              ? `${description.substring(0, 100)}...` 
-              : description}
+          <p className="m-0 text-sm flex-1 line-clamp-3">
+            {description}
           </p>
         )}
       </div>
