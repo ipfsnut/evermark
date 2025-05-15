@@ -104,12 +104,21 @@
   }
   
   .btn-primary {
-    @apply bg-warpcast text-white hover:bg-warpcast-dark shadow-md hover:shadow-lg relative overflow-hidden group;
+    @apply bg-warpcast text-white hover:bg-warpcast-dark shadow-md hover:shadow-lg relative overflow-hidden;
   }
   
-  .btn-primary::after {
+  /* Use this class for buttons that need the group hover effect */
+  .btn-primary-with-effect {
+    @apply relative overflow-hidden;
+  }
+  
+  .btn-primary-with-effect::after {
     content: '';
-    @apply absolute inset-0 bg-gradient-to-r from-warpcast via-warpcast-dark to-warpcast opacity-0 group-hover:opacity-100 transition-opacity duration-500;
+    @apply absolute inset-0 bg-gradient-to-r from-warpcast via-warpcast-dark to-warpcast opacity-0 transition-opacity duration-500;
+  }
+  
+  .btn-primary-with-effect:hover::after {
+    @apply opacity-100;
   }
   
   .btn-primary > * {
