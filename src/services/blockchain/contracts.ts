@@ -51,8 +51,84 @@ class ContractService {
   private contracts: Map<string, Contract> = new Map();
   private cache: Map<string, { value: any; timestamp: number }> = new Map();
   
+  // Fallback RPC URLs
+  private rpcUrls = [
+    API_CONFIG.RPC_URL,
+    'https://mainnet.base.org',
+    'https://base-mainnet.public.blastapi.io',
+    'https://base.llamarpc.com'
+  ];
+  private currentRpcIndex = 0;
+  private lastProviderSwitch = 0;
+  private networkStatus: 'connected' | 'connecting' | 'error' = 'connecting';
+  private switchingProvider = false;
+  
   constructor() {
-    this.provider = new JsonRpcProvider(API_CONFIG.RPC_URL);
+    this.provider = new JsonRpcProvider(this.rpcUrls[0]);
+    this.checkConnection();
+  }
+  
+  /**
+   * Check if the current provider is connected
+   */
+  private async checkConnection() {
+    try {
+      await this.provider.getBlockNumber();
+      this.networkStatus = 'connected';
+    } catch (error) {
+      this.networkStatus = 'error';
+      // Try switching provider
+      this.switchRpcProvider();
+    }
+  }
+  
+  /**
+   * Get current network status
+   */
+  public getNetworkStatus() {
+    return this.networkStatus;
+  }
+  
+  /**
+   * Switch to a different RPC provider
+   */
+  private async switchRpcProvider(): Promise<boolean> {
+    // Prevent concurrent switches
+    if (this.switchingProvider) {
+      return false;
+    }
+    
+    // Don't switch providers too frequently
+    const now = Date.now();
+    if (now - this.lastProviderSwitch < 10000) {
+      return false;
+    }
+    
+    this.switchingProvider = true;
+    this.lastProviderSwitch = now;
+    this.networkStatus = 'connecting';
+    
+    try {
+      // Try the next provider
+      this.currentRpcIndex = (this.currentRpcIndex + 1) % this.rpcUrls.length;
+      this.provider = new JsonRpcProvider(this.rpcUrls[this.currentRpcIndex]);
+      
+      // Clear contract cache when switching providers
+      this.contracts.clear();
+      
+      console.log(`Switching to RPC provider: ${this.rpcUrls[this.currentRpcIndex]}`);
+      
+      // Test the new connection
+      await this.provider.getBlockNumber();
+      this.networkStatus = 'connected';
+      return true;
+    } catch (error) {
+      console.warn(`Provider ${this.rpcUrls[this.currentRpcIndex]} failed`);
+      this.networkStatus = 'error';
+      return false;
+    } finally {
+      this.switchingProvider = false;
+    }
   }
   
   /**
@@ -77,15 +153,15 @@ class ContractService {
   }
   
   /**
-   * Call contract method with caching
+   * Call contract method with caching and retries
    */
   async callContract<T>(
     contract: Contract,
     method: string,
     args: any[] = [],
-    options: { cache?: boolean; cacheTime?: number } = {}
+    options: { cache?: boolean; cacheTime?: number; retry?: boolean } = {}
   ): Promise<T> {
-    const { cache = true, cacheTime = 30000 } = options;
+    const { cache = true, cacheTime = 30000, retry = true } = options;
     const cacheKey = `${contract.target}_${method}_${JSON.stringify(args)}`;
     
     // Check cache
@@ -96,19 +172,52 @@ class ContractService {
       }
     }
     
-    try {
-      const result = await contract[method](...args);
-      
-      // Cache result
-      if (cache) {
-        this.cache.set(cacheKey, { value: result, timestamp: Date.now() });
+    let lastError: Error | null = null;
+    
+    // Try to call the contract with retries
+    for (let attempts = 0; attempts < (retry ? this.rpcUrls.length : 1); attempts++) {
+      try {
+        const result = await contract[method](...args);
+        
+        // Cache result
+        if (cache) {
+          this.cache.set(cacheKey, { value: result, timestamp: Date.now() });
+        }
+        
+        return result;
+      } catch (error: any) {
+        lastError = error;
+        
+        if (!retry || attempts >= this.rpcUrls.length - 1) {
+          // Last attempt or retry disabled, break the loop
+          break;
+        }
+        
+        // Try another provider
+        await this.switchRpcProvider();
+        
+        // Recreate the contract with the new provider
+        // This step is necessary after provider switch
+        if (this.contracts.has(`${contract.target.toString().toLowerCase()}_provider`)) {
+          contract = this.getContract(contract.target.toString(), contract.interface.fragments);
+        }
+        
+        // Add a small delay before retry
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
-      
-      return result;
-    } catch (error: any) {
-      errorLogger.log('contractService', error, { method: `${method}`, args });
-      throw new Error(`Contract call failed: ${method}(${JSON.stringify(args)}): ${error.message}`);
     }
+    
+    // All attempts failed
+    if (lastError) {
+      errorLogger.log('contractService', lastError, { 
+        method: `${method}`,
+        args,
+        attempts: retry ? this.rpcUrls.length : 1
+      });
+      throw lastError;
+    }
+    
+    throw new Error(`Contract call failed: ${method}(${JSON.stringify(args)})`);
   }
   
   /**
@@ -406,10 +515,22 @@ class ContractService {
       
       try {
         const [exists, tokenURI, owner, bookmarkData] = await Promise.all([
-          this.callContract<boolean>(contract, 'exists', [tokenId]).catch(() => false),
-          this.callContract<string>(contract, 'tokenURI', [tokenId]).catch(() => ''),
-          this.callContract<string>(contract, 'ownerOf', [tokenId]).catch(() => null),
-          this.callContract<[string, string, string]>(contract, 'getBookmarkMetadata', [tokenId]).catch(() => null),
+          this.callContract<boolean>(contract, 'exists', [tokenId], {
+            cache: true,
+            cacheTime: 300000 // 5 minutes
+          }).catch(() => false),
+          this.callContract<string>(contract, 'tokenURI', [tokenId], {
+            cache: true,
+            cacheTime: 3600000 // 1 hour
+          }).catch(() => ''),
+          this.callContract<string>(contract, 'ownerOf', [tokenId], {
+            cache: true,
+            cacheTime: 300000 // 5 minutes
+          }).catch(() => null),
+          this.callContract<[string, string, string]>(contract, 'getBookmarkMetadata', [tokenId], {
+            cache: true,
+            cacheTime: 3600000 // 1 hour
+          }).catch(() => null),
         ]);
         
         return {
@@ -470,35 +591,103 @@ class ContractService {
   }
   
   /**
-   * Get user's bookmarks (evermarks)
+   * Get user's bookmarks (evermarks) with optimized approach
    */
   async getUserEvermarks(address: string): Promise<string[]> {
     try {
       const formattedAddress = ethers.getAddress(address);
       
-      const contract = this.getContract(
-        CONTRACT_ADDRESSES.BOOKMARK_NFT,
-        BookmarkNFTABI
-      );
-      
-      try {
-        // Get all tokens owned by the user
-        const balance = await this.callContract<bigint>(contract, 'balanceOf', [formattedAddress]);
-        
-        // Query Transfer events to find tokens
-        const filter = contract.filters.Transfer(null, formattedAddress);
-        const events = await contract.queryFilter(filter);
-        
-        // Extract token IDs
-        const tokenIds = events.map(event => 
-          'args' in event ? event.args[2].toString() : ''
-        ).filter(Boolean);
-        
-        return tokenIds;
-      } catch (innerError) {
-        errorLogger.log('contractService', innerError, { method: 'getUserEvermarks:inner' });
-        return [];
+      // First check memory cache
+      const cacheKey = `user_evermarks_${formattedAddress.toLowerCase()}`;
+      const cachedItem = this.cache.get(cacheKey);
+      if (cachedItem && Date.now() - cachedItem.timestamp < 300000) { // 5 min cache
+        return cachedItem.value;
       }
+      
+      // Then check localStorage
+      try {
+        const storedCache = localStorage.getItem(cacheKey);
+        if (storedCache) {
+          const parsed = JSON.parse(storedCache);
+          // Store in memory cache too
+          this.cache.set(cacheKey, { value: parsed, timestamp: Date.now() });
+          return parsed;
+        }
+      } catch (e) {
+        // Invalid cache, continue
+      }
+      
+      // Retry with fallback RPC providers
+      for (let attempt = 0; attempt < this.rpcUrls.length; attempt++) {
+        try {
+          const contract = this.getContract(
+            CONTRACT_ADDRESSES.BOOKMARK_NFT,
+            BookmarkNFTABI
+          );
+          
+          // First get balance to avoid unnecessary queries
+          const balance = await this.callContract<bigint>(contract, 'balanceOf', [formattedAddress], {
+            cache: true,
+            cacheTime: 60000 // 1 minute
+          });
+          
+          if (balance <= BigInt(0)) {
+            // Cache empty result
+            const emptyResult: string[] = [];
+            this.cache.set(cacheKey, { value: emptyResult, timestamp: Date.now() });
+            localStorage.setItem(cacheKey, JSON.stringify(emptyResult));
+            return emptyResult;
+          }
+          
+          // Get the latest block number to limit search range
+          const latestBlock = await this.provider.getBlockNumber();
+          // Start from a more recent block (roughly 3 months of blocks)
+          const fromBlock = Math.max(0, latestBlock - 120000);
+          
+          // Create filter with limited block range
+          const filter = contract.filters.Transfer(null, formattedAddress);
+          const events = await contract.queryFilter(filter, fromBlock);
+          
+          // Extract token IDs
+          const tokenIds = events
+            .filter(event => 'args' in event)
+            .map(event => {
+              // Make sure event is properly formed
+              if ('args' in event && Array.isArray(event.args) && event.args.length >= 3) {
+                return event.args[2].toString();
+              }
+              return '';
+            })
+            .filter(Boolean);
+          
+          // Cache results
+          this.cache.set(cacheKey, { value: tokenIds, timestamp: Date.now() });
+          localStorage.setItem(cacheKey, JSON.stringify(tokenIds));
+          
+          return tokenIds;
+        } catch (error) {
+          errorLogger.log('contractService', error, { 
+            method: 'getUserEvermarks:inner', 
+            attempt: attempt + 1 
+          });
+          
+          // Try switching RPC provider
+          await this.switchRpcProvider();
+        }
+      }
+      
+      // All attempts failed - check localStorage one more time
+      try {
+        const storedCache = localStorage.getItem(cacheKey);
+        if (storedCache) {
+          return JSON.parse(storedCache);
+        }
+      } catch (e) {
+        // Invalid cache
+      }
+      
+      // Last resort - return empty array
+      return [];
     } catch (error) {
       errorLogger.log('contractService', error, { method: 'getUserEvermarks', address });
       return [];
@@ -516,7 +705,12 @@ class ContractService {
       );
       
       try {
-        const totalSupply = await this.callContract<bigint>(contract, 'totalSupply', []);
+        const totalSupply = await this.callContract<bigint>(
+          contract, 
+          'totalSupply', 
+          [], 
+          { cache: true, cacheTime: 300000 } // 5 minutes
+        );
         return Number(totalSupply);
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getTotalEvermarks:inner' });
@@ -541,7 +735,12 @@ class ContractService {
       );
 
       try {
-        return await this.callContract<bigint>(votingContract, 'getBookmarkVotes', [evermarkId]);
+        return await this.callContract<bigint>(
+          votingContract, 
+          'getBookmarkVotes', 
+          [evermarkId],
+          { cache: true, cacheTime: 60000 } // 1 minute
+        );
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getBookmarkVotes:inner' });
         return BigInt(0);
@@ -622,7 +821,8 @@ class ContractService {
         return await this.callContract<bigint>(
           votingContract, 
           'getUserVotesForBookmark', 
-          [formattedAddress, bookmarkId]
+          [formattedAddress, bookmarkId],
+          { cache: true, cacheTime: 60000 } // 1 minute
         );
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getUserVotesForBookmark:inner' });
@@ -650,7 +850,8 @@ class ContractService {
         return await this.callContract<bigint>(
           votingContract, 
           'getTotalUserVotesInCurrentCycle', 
-          [formattedAddress]
+          [formattedAddress],
+          { cache: true, cacheTime: 60000 } // 1 minute
         );
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getTotalUserVotesInCurrentCycle:inner' });
@@ -676,7 +877,8 @@ class ContractService {
         return await this.callContract<string[]>(
           votingContract, 
           'getBookmarksWithVotesInCycle', 
-          [cycle]
+          [cycle],
+          { cache: true, cacheTime: 300000 } // 5 minutes
         );
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getBookmarksWithVotesInCycle:inner' });
@@ -699,7 +901,12 @@ class ContractService {
       );
 
       try {
-        const cycle = await this.callContract<bigint>(votingContract, 'getCurrentCycle', []);
+        const cycle = await this.callContract<bigint>(
+          votingContract, 
+          'getCurrentCycle', 
+          [],
+          { cache: true, cacheTime: 60000 } // 1 minute 
+        );
         return Number(cycle);
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getCurrentCycle:inner' });
@@ -722,7 +929,12 @@ class ContractService {
       );
 
       try {
-        const timeRemaining = await this.callContract<bigint>(votingContract, 'getTimeRemainingInCurrentCycle', []);
+        const timeRemaining = await this.callContract<bigint>(
+          votingContract, 
+          'getTimeRemainingInCurrentCycle', 
+          [],
+          { cache: true, cacheTime: 30000 } // 30 seconds
+        );
         return Number(timeRemaining);
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getTimeRemainingInCurrentCycle:inner' });
@@ -749,7 +961,12 @@ class ContractService {
       );
 
       try {
-        return await this.callContract<bigint>(rewardsContract, 'getPendingRewards', [formattedAddress]);
+        return await this.callContract<bigint>(
+          rewardsContract, 
+          'getPendingRewards', 
+          [formattedAddress],
+          { cache: true, cacheTime: 60000 } // 1 minute
+        );
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getPendingRewards:inner' });
         return BigInt(0);
@@ -826,7 +1043,8 @@ class ContractService {
         return await this.callContract<BookmarkRank[]>(
           leaderboardContract, 
           'getWeeklyTopBookmarks', 
-          [weekNumber, count]
+          [weekNumber, count],
+          { cache: true, cacheTime: 300000 } // 5 minutes
         );
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getWeeklyTopBookmarks:inner' });
@@ -852,7 +1070,8 @@ class ContractService {
         const rank = await this.callContract<bigint>(
           leaderboardContract, 
           'getBookmarkRankForWeek', 
-          [weekNumber, bookmarkId]
+          [weekNumber, bookmarkId],
+          { cache: true, cacheTime: 300000 } // 5 minutes
         );
         return Number(rank);
       } catch (innerError) {
@@ -879,7 +1098,8 @@ class ContractService {
         return await this.callContract<boolean>(
           leaderboardContract, 
           'isLeaderboardFinalized', 
-          [weekNumber]
+          [weekNumber],
+          { cache: true, cacheTime: 300000 } // 5 minutes
         );
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'isLeaderboardFinalized:inner' });
@@ -1028,12 +1248,12 @@ class ContractService {
       );
 
       try {
-        const auctionData = await this.callContract<AuctionData>(
+        return await this.callContract<AuctionData>(
           auctionContract, 
           'getAuctionDetails', 
-          [auctionId]
+          [auctionId],
+          { cache: true, cacheTime: 60000 } // 1 minute
         );
-        return auctionData;
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getAuctionDetails:inner' });
         return null;
@@ -1055,7 +1275,12 @@ class ContractService {
       );
 
       try {
-        return await this.callContract<string[]>(auctionContract, 'getActiveAuctions', []);
+        return await this.callContract<string[]>(
+          auctionContract, 
+          'getActiveAuctions', 
+          [],
+          { cache: true, cacheTime: 60000 } // 1 minute
+        );
       } catch (innerError) {
         errorLogger.log('contractService', innerError, { method: 'getActiveAuctions:inner' });
         return [];
