@@ -1,7 +1,9 @@
+// src/components/layout/LibraryLayout.tsx
 import React, { useState, useEffect } from 'react';
-import { MenuIcon, Moon, Sun } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { SidebarMenu } from './SidebarMenu';
-import { EvermarkLogo } from '../common/EvermarkLogo';
+import { Header } from './Header';
+import { Footer } from './Footer';
 
 interface LibraryLayoutProps {
   children: React.ReactNode;
@@ -15,6 +17,7 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
     if (saved !== null) return saved === 'true';
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
+  const location = useLocation();
   
   // Apply dark mode class to body
   useEffect(() => {
@@ -27,59 +30,42 @@ export const LibraryLayout: React.FC<LibraryLayoutProps> = ({ children }) => {
     localStorage.setItem('darkMode', String(darkMode));
   }, [darkMode]);
   
+  // Effect for page transitions
+  useEffect(() => {
+    // Scroll to top on route change
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+  
   const toggleDarkMode = () => setDarkMode(!darkMode);
   
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className={`flex items-center justify-between px-4 py-3 border-b ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-        <div className="flex items-center">
-          <button 
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 mr-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
-          >
-            <MenuIcon className="h-6 w-6" />
-          </button>
-          
-          <EvermarkLogo size="xs" />
-        </div>
-        
-        <button
-          onClick={toggleDarkMode}
-          className="dark-toggle"
-          aria-label="Toggle dark mode"
-        >
-          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-      </header>
+    <div className="min-h-screen flex flex-col bg-parchment-light dark:bg-ink-dark transition-colors duration-300">
+      {/* Use the Header component */}
+      <Header 
+        onMenuOpen={() => setSidebarOpen(true)}
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
+        currentPath={location.pathname}
+      />
       
-      {/* Main content */}
-      <main className="flex-1 p-4">
-        <div className="content-container content-centered">
+      {/* Main content - enhanced with subtle background texture */}
+      <main className="flex-1 relative">
+        {/* Subtle parchment background texture */}
+        <div className="absolute inset-0 bg-parchment-texture opacity-30 dark:opacity-5 pointer-events-none"></div>
+        
+        {/* Content container with page-turn animation */}
+        <div 
+          key={location.pathname}
+          className="relative z-10 max-w-6xl mx-auto px-4 py-6 sm:py-8 animate-page-in"
+        >
           {children}
         </div>
       </main>
       
-      {/* Footer */}
-      <footer className={`py-4 text-center ${darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
-        <div className="content-container flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center mb-4 md:mb-0">
-<img 
-  src="/EvermarkLogo.png" 
-  alt="Evermark Logo"
-  style={{ height: '16px', maxWidth: '60px', width: 'auto' }}
-/>            <span className="ml-2">© 2025 Evermark. All rights reserved.</span>
-          </div>
-          
-          <div className="flex space-x-6">
-            <a href="#" className="hover:underline">Terms</a>
-            <a href="#" className="hover:underline">Privacy</a>
-            <a href="#" className="hover:underline">Help</a>
-          </div>
-        </div>
-      </footer>
+      {/* Use the Footer component */}
+      <Footer />
       
-      {/* Sidebar */}
+      {/* Sidebar Menu */}
       <SidebarMenu 
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

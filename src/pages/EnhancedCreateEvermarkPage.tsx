@@ -1,4 +1,4 @@
-// src/components/CreateEvermark.tsx
+// src/components/EnhancedCreateEvermark.tsx
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useEvermarks } from '../hooks/useEvermarks';
@@ -132,7 +132,7 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
 
   if (!isAuthenticated) {
     return (
-      <div className="text-center py-12 bg-amber-50/30 rounded-lg shadow-md border border-amber-200 animate-text-in">
+      <div className="text-center py-12 bg-amber-50/30 rounded-lg shadow-md border border-amber-200">
         <p className="text-gray-700 font-serif">Please sign in to create an evermark.</p>
       </div>
     );
@@ -141,7 +141,7 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
   return (
     <div className="max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-center mb-6 animate-text-in">
+      <div className="flex items-center mb-6">
         <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
           <span className="text-purple-600 text-xl">📚</span>
         </div>
@@ -152,7 +152,8 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
       </div>
       
       {/* Source URL with auto-detect */}
-      <div className="rounded-xl border border-amber-200 shadow-sm bg-amber-50/30 mb-6 animate-text-in" style={{animationDelay: "0.1s"}}>
+      <div className="rounded-xl border border-amber-200 shadow-sm bg-amber-50/30 mb-6">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-400 to-purple-100"></div>
         <div className="p-6">
           <h2 className="text-lg font-serif font-semibold text-gray-800 mb-4 flex items-center">
             <span className="mr-2">🔗</span>
@@ -197,7 +198,7 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
       {/* Main form fields */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Content Details */}
-        <div className="rounded-xl border border-amber-200 shadow-md overflow-hidden animate-text-in" style={{animationDelay: "0.2s"}}>
+        <div className="rounded-xl border border-amber-200 shadow-md overflow-hidden">
           <div className="bg-amber-800 px-6 py-4 flex items-center">
             <span className="text-amber-50 mr-2">📖</span>
             <h2 className="text-lg font-serif font-semibold text-amber-50">Content Details</h2>
@@ -387,7 +388,7 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
         </div>
         
         {/* Submit Button */}
-        <div className="flex justify-end animate-text-in" style={{animationDelay: "0.3s"}}>
+        <div className="flex justify-end">
           <button
             type="submit"
             disabled={creating || !formData.title}
@@ -412,7 +413,7 @@ export const CreateEvermark: React.FC<CreateEvermarkProps> = ({ onSuccess, onErr
       </form>
       
       {/* Help Section */}
-      <div className="mt-10 p-5 bg-amber-50/30 rounded-lg border border-amber-200 shadow-sm animate-text-in" style={{animationDelay: "0.4s"}}>
+      <div className="mt-10 p-5 bg-amber-50/30 rounded-lg border border-amber-200 shadow-sm">
         <h3 className="text-sm font-serif font-medium text-gray-800 mb-3 flex items-center">
           <span className="mr-2">💡</span>
           Tips for creating great Evermarks:

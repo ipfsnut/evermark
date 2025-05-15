@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Base Styles ===== */
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900;
@@ -11,10 +12,33 @@
   body.dark-mode {
     @apply bg-gray-900 text-gray-100;
   }
+  
+  /* Typography */
+  h1, .text-responsive-title {
+    @apply font-serif text-2xl sm:text-3xl md:text-4xl font-bold leading-tight text-ink-dark dark:text-parchment-light tracking-tight;
+  }
+  
+  h2, .text-responsive-card-title {
+    @apply font-serif text-xl sm:text-2xl font-semibold leading-tight text-ink-dark dark:text-parchment-light tracking-tight;
+  }
+  
+  h3 {
+    @apply font-serif text-lg font-semibold leading-tight text-ink-dark dark:text-parchment-light;
+  }
+  
+  p {
+    @apply font-serif text-ink leading-relaxed dark:text-parchment tracking-wide;
+  }
+  
+  /* Links */
+  a:not(.btn) {
+    @apply text-warpcast hover:text-warpcast-dark dark:text-warpcast-light dark:hover:text-warpcast transition-colors duration-200 underline-offset-2 hover:underline;
+  }
 }
 
+/* ===== Components ===== */
 @layer components {
-  /* Sidebar component */
+  /* Sidebar */
   .sidebar {
     @apply fixed top-0 left-0 w-72 h-full z-40 overflow-y-auto transition-transform duration-300 ease-in-out;
   }
@@ -52,6 +76,11 @@
     @apply bg-black bg-opacity-50;
   }
   
+  .bg-parchment-texture {
+    background-image: url('/textures/parchment.jpg');
+    @apply bg-cover bg-center relative;
+  }
+  
   .bg-parchment {
     background-image: url('/textures/parchment.jpg');
     @apply bg-cover bg-center relative;
@@ -85,6 +114,7 @@
   }
 }
 
+/* ===== Utilities ===== */
 @layer utilities {
   .content-container {
     @apply w-full max-w-4xl mx-auto px-4;
@@ -92,5 +122,66 @@
   
   .content-centered {
     @apply flex flex-col items-center justify-center;
+  }
+  
+  /* Animation utilities */
+  .animate-page-in {
+    animation: pageIn 0.4s ease-out forwards;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+  
+  .animate-text-in {
+    animation: textIn 0.5s ease-out forwards;
+  }
+  
+  .animate-gradient-x {
+    animation: gradientX 3s ease infinite;
+  }
+  
+  .bg-size-200 {
+    background-size: 200% 100%;
+  }
+}
+
+/* ===== Animations ===== */
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes textIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gradientX {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }

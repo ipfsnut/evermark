@@ -37,6 +37,20 @@ module.exports = {
           DEFAULT: '#8252e4',
           dark: '#6836cc',
         },
+        amber: {
+          '50': '#fffbeb',
+          '100': '#fef3c7',
+          '200': '#fde68a',
+          '800': '#92400e',
+        },
+        purple: {
+          '50': '#faf5ff',
+          '100': '#f3e8ff',
+          '200': '#e9d5ff',
+          '400': '#c084fc',
+          '600': '#9333ea',
+          '700': '#7e22ce',
+        },
       },
       fontFamily: {
         serif: ['Bookman Old Style', 'Bookman', 'Palatino', 'Georgia', 'serif'],

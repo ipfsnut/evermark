@@ -1,3 +1,4 @@
+// src/components/evermark/UrlDetectionSection.tsx
 import React from 'react';
 import { SearchIcon } from 'lucide-react';
 import { StyledInput } from '../forms/StyledInput';
@@ -30,7 +31,7 @@ export const UrlDetectionSection: React.FC<UrlDetectionSectionProps> = ({
         containerClassName="mb-3"
       />
       
-      <div className="flex justify-end">
+      <div className="flex justify-center">
         <StyledButton
           type="button"
           onClick={onAutoDetect}
