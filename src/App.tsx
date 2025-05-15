@@ -12,6 +12,7 @@ import MyEvermarksPage from "./pages/MyEvermarksPage";
 import EvermarkDetailPage from "./pages/EvermarkDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import LeaderboardPage from "./pages/LeaderboardPage";
 
 // Import test console for development
 import TestConsole from "./components/testing/TestConsole";
@@ -50,6 +51,11 @@ function App() {
                 <Route path="/my-evermarks" element={
                   <ErrorBoundary component="MyEvermarksPage">
                     <MyEvermarksPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/leaderboard" element={
+                  <ErrorBoundary component="LeaderboardPage">
+                    <LeaderboardPage />
                   </ErrorBoundary>
                 } />
                 <Route path="/evermark/:id" element={

@@ -12,6 +12,7 @@ import {
   ArrowDownIcon,
   CopyIcon
 } from 'lucide-react';
+import { RewardsPanel } from '../components/rewards/RewardsPanel';
 
 const ProfilePage: React.FC = () => {
   const { user, isAuthenticated, signOut } = useAuth();
@@ -104,7 +105,8 @@ const ProfilePage: React.FC = () => {
               {formatEther(balances.available)}
             </div>
           </div>
-          
+              <RewardsPanel />
+
           <div className="bg-blue-50 rounded-lg p-4">
             <div className="flex items-center text-sm text-blue-600 mb-1">
               <StarsIcon className="w-4 h-4 mr-1" />

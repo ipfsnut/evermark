@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { XIcon, HomeIcon, PlusIcon, BookmarkIcon, UserIcon, Sun, Moon } from 'lucide-react';
+import { XIcon, HomeIcon, PlusIcon, BookmarkIcon, UserIcon, Sun, Moon, TrophyIcon } from 'lucide-react';
 
 interface SidebarMenuProps {
   isOpen: boolean;
@@ -105,6 +105,7 @@ export const SidebarMenu: React.FC<SidebarMenuProps> = ({ isOpen, onClose, darkM
             <MenuLink icon={<HomeIcon size={18} />} to="/" label="Home" />
             <MenuLink icon={<PlusIcon size={18} />} to="/create" label="Create" />
             <MenuLink icon={<BookmarkIcon size={18} />} to="/my-evermarks" label="My Evermarks" />
+            <MenuLink icon={<TrophyIcon size={18} />} to="/leaderboard" label="Leaderboard" />
             <MenuLink icon={<UserIcon size={18} />} to="/profile" label="Profile" />
           </ul>
         </nav>

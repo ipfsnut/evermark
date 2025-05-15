@@ -58,3 +58,27 @@ export interface VoteInfo {
   power: bigint;
   timestamp: number;
 }
+
+export interface EvermarkRank {
+  tokenId: string;
+  votes: bigint;
+  rank: number;
+}
+
+export interface EvermarkAuctionData {
+  tokenId: string;
+  nftContract: string;
+  seller: string;
+  startingPrice: bigint;
+  reservePrice: bigint;
+  currentBid: bigint;
+  highestBidder: string;
+  startTime: number;
+  endTime: number;
+  finalized: boolean;
+}
+
+// Export type aliases for backward compatibility with existing code
+export type BookmarkRank = EvermarkRank;
+export type AuctionData = EvermarkAuctionData;
+export type BookmarkAuctionData = EvermarkAuctionData;
