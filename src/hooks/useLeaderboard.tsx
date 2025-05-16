@@ -6,16 +6,16 @@ import { useAuth } from './useAuth';
 export function useLeaderboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [topEvermarks, setTopEvermarks] = useState<EvermarkRank[]>([]);
-  const [currentCycle, setCurrentCycle] = useState<number>(0);
+  const [topBookmarks, setTopBookmarks] = useState<EvermarkRank[]>([]);
+  const [currentWeek, setCurrentWeek] = useState<number>(0);
   const [isFinalized, setIsFinalized] = useState<boolean>(false);
   const { user } = useAuth();
 
-  // Get current cycle
+  // Get current cycle (called currentWeek in the UI)
   const fetchCurrentCycle = useCallback(async () => {
     try {
       const cycle = await evermarkVotingService.getCurrentCycle();
-      setCurrentCycle(cycle);
+      setCurrentWeek(cycle);
       return cycle;
     } catch (err: any) {
       console.error('Failed to fetch current cycle:', err);
@@ -37,29 +37,29 @@ export function useLeaderboard() {
   }, []);
 
   // Fetch top evermarks for a given week
-  const fetchTopEvermarks = useCallback(async (weekNumber: number, count: number = 10) => {
+  const fetchTopBookmarks = useCallback(async (weekNumber: number, count: number = 10) => {
     setLoading(true);
     setError(null);
     
     try {
       const evermarks = await evermarkLeaderboardService.getWeeklyTopEvermarks(weekNumber, count);
-      setTopEvermarks(evermarks);
+      setTopBookmarks(evermarks);
       
       // Check if the leaderboard is finalized
       await checkIsFinalized(weekNumber);
     } catch (err: any) {
       console.error('Failed to fetch top evermarks:', err);
       setError('Failed to fetch leaderboard data');
-      setTopEvermarks([]);
+      setTopBookmarks([]);
     } finally {
       setLoading(false);
     }
   }, [checkIsFinalized]);
 
   // Get evermark rank for a specific week
-  const getEvermarkRankForWeek = useCallback(async (weekNumber: number, evermarkId: string) => {
+  const getBookmarkRankForWeek = useCallback(async (weekNumber: number, bookmarkId: string) => {
     try {
-      return await evermarkLeaderboardService.getEvermarkRankForWeek(weekNumber, evermarkId);
+      return await evermarkLeaderboardService.getEvermarkRankForWeek(weekNumber, bookmarkId);
     } catch (err: any) {
       console.error('Failed to fetch evermark rank:', err);
       return 0;
@@ -70,20 +70,20 @@ export function useLeaderboard() {
   useEffect(() => {
     const init = async () => {
       const cycle = await fetchCurrentCycle();
-      await fetchTopEvermarks(cycle);
+      await fetchTopBookmarks(cycle);
     };
     
     init();
-  }, [fetchCurrentCycle, fetchTopEvermarks]);
+  }, [fetchCurrentCycle, fetchTopBookmarks]);
 
   return {
     loading,
     error,
-    topEvermarks,
-    currentCycle,
+    topBookmarks,  // Note: UI expects this name, not topEvermarks
+    currentWeek,   // Note: UI expects this name, not currentCycle
     isFinalized,
-    fetchTopEvermarks,
+    fetchTopBookmarks,  // Note: UI expects this name, not fetchTopEvermarks
     fetchCurrentCycle,
-    getEvermarkRankForWeek
+    getBookmarkRankForWeek  // Note: UI expects this name, not getEvermarkRankForWeek
   };
 }

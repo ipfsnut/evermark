@@ -1,8 +1,7 @@
 // src/hooks/useBlockchain.ts
 import { useState, useEffect, useCallback } from 'react';
-import { tokenStakingService, UnbondingRequest } from '../services/blockchain';
+import { tokenStakingService, UnbondingRequest, formatEther, parseEther } from '../services/blockchain';
 import { useAuth } from './useAuth';
-import { ethers } from 'ethers';
 
 export function useBlockchain() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -13,19 +12,28 @@ export function useBlockchain() {
   const [availableVotingPower, setAvailableVotingPower] = useState<bigint>(BigInt(0));
   const [unbondingRequests, setUnbondingRequests] = useState<UnbondingRequest[]>([]);
   const [networkStatus, setNetworkStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
+  const [transaction, setTransaction] = useState<{
+    hash: string;
+    status: 'pending' | 'success' | 'error';
+    error?: string;
+  }>({ hash: '', status: 'pending' });
+  
   const { user } = useAuth();
 
   // Get network status
   const getNetworkStatus = useCallback(() => {
-    // Access the network status from the service
-    // This requires exposing a method in the TokenStakingService
-    // If not available, we can handle it at the hook level
-    const status = tokenStakingService.getNetworkStatus ? 
-      tokenStakingService.getNetworkStatus() : 
-      'connected';
-    
-    setNetworkStatus(status as 'connected' | 'connecting' | 'error');
-    return status;
+    try {
+      // Try to access the network status from the service
+      const status = tokenStakingService.getNetworkStatus?.();
+      if (status) {
+        setNetworkStatus(status as 'connected' | 'connecting' | 'error');
+        return status;
+      }
+      return 'connected';
+    } catch (err) {
+      console.error('Failed to get network status:', err);
+      return 'connected';
+    }
   }, []);
 
   // Fetch NSI token balance
@@ -123,13 +131,19 @@ export function useBlockchain() {
     }
   }, [user]);
 
-  // Wrap (stake) tokens
+  // Wrap tokens (Stake tokens in the UI)
   const wrapTokens = useCallback(async (amount: string) => {
     setLoading(true);
     setError(null);
     
     try {
+      // Set transaction to pending
+      setTransaction({ hash: '', status: 'pending' });
+      
       const result = await tokenStakingService.wrapTokens(amount);
+      
+      // Set transaction details
+      setTransaction({ hash: result.hash, status: 'success' });
       
       // Refresh balances after wrapping
       if (user?.walletAddress) {
@@ -143,19 +157,26 @@ export function useBlockchain() {
     } catch (err: any) {
       console.error('Failed to wrap tokens:', err);
       setError(`Failed to stake tokens: ${err.message}`);
+      setTransaction({ hash: '', status: 'error', error: err.message });
       throw err;
     } finally {
       setLoading(false);
     }
   }, [user, fetchNSIBalance, fetchStakedBalance, fetchVotingPower, fetchAvailableVotingPower]);
 
-  // Request token unwrap (unbonding)
+  // Request token unwrap (Withdraw tokens in the UI)
   const requestUnwrap = useCallback(async (amount: string) => {
     setLoading(true);
     setError(null);
     
     try {
+      // Set transaction to pending
+      setTransaction({ hash: '', status: 'pending' });
+      
       const result = await tokenStakingService.requestUnwrap(amount);
+      
+      // Set transaction details
+      setTransaction({ hash: result.hash, status: 'success' });
       
       // Refresh data after request
       if (user?.walletAddress) {
@@ -169,6 +190,7 @@ export function useBlockchain() {
     } catch (err: any) {
       console.error('Failed to request unwrap:', err);
       setError(`Failed to request token unstake: ${err.message}`);
+      setTransaction({ hash: '', status: 'error', error: err.message });
       throw err;
     } finally {
       setLoading(false);
@@ -181,7 +203,13 @@ export function useBlockchain() {
     setError(null);
     
     try {
+      // Set transaction to pending
+      setTransaction({ hash: '', status: 'pending' });
+      
       const result = await tokenStakingService.completeUnwrap(requestIndex);
+      
+      // Set transaction details
+      setTransaction({ hash: result.hash, status: 'success' });
       
       // Refresh data after completion
       if (user?.walletAddress) {
@@ -193,28 +221,16 @@ export function useBlockchain() {
     } catch (err: any) {
       console.error('Failed to complete unwrap:', err);
       setError(`Failed to complete token unstake: ${err.message}`);
+      setTransaction({ hash: '', status: 'error', error: err.message });
       throw err;
     } finally {
       setLoading(false);
     }
   }, [user, fetchNSIBalance, fetchUnbondingRequests]);
 
-  // Format ether for display
-  const formatEther = useCallback((value: bigint | string): string => {
-    try {
-      return ethers.formatEther(value);
-    } catch (error) {
-      return '0';
-    }
-  }, []);
-
-  // Parse ether from string
-  const parseEther = useCallback((value: string): bigint => {
-    try {
-      return ethers.parseEther(value);
-    } catch (error) {
-      return BigInt(0);
-    }
+  // Clear transaction
+  const clearTransaction = useCallback(() => {
+    setTransaction({ hash: '', status: 'pending' });
   }, []);
 
   // Initialize with user's data
@@ -230,25 +246,48 @@ export function useBlockchain() {
     getNetworkStatus();
   }, [user, fetchNSIBalance, fetchStakedBalance, fetchVotingPower, fetchAvailableVotingPower, fetchUnbondingRequests, getNetworkStatus]);
 
+  // Calculate total locked balance from unbonding requests
+  const lockedBalance = unbondingRequests.reduce((total, request) => total + request.amount, BigInt(0));
+
+  // Return the shape that the frontend expects
   return {
     loading,
     error,
+    // Structured balances object expected by ProfilePage
+    balances: {
+      available: nsiBalance,
+      staked: stakedBalance,
+      votingPower: votingPower,
+      locked: lockedBalance
+    },
+    // Structured stake info expected by the frontend
+    stakeInfo: {
+      unbondingRequests: unbondingRequests
+    },
+    // The frontend expects these function names
+    stakeTokens: wrapTokens,
+    withdrawTokens: requestUnwrap,
+    completeUnwrap,
+    transaction,
+    clearTransaction,
+    
+    // Keep the original raw data available too
     nsiBalance,
     stakedBalance,
     votingPower,
     availableVotingPower,
-    unbondingRequests,
     networkStatus,
+    
+    // Raw methods for new components that might use them
     fetchNSIBalance,
     fetchStakedBalance,
     fetchVotingPower,
     fetchAvailableVotingPower,
     fetchUnbondingRequests,
-    wrapTokens,
-    requestUnwrap,
-    completeUnwrap,
+    getNetworkStatus,
+    
+    // Format and parse methods
     formatEther,
-    parseEther,
-    getNetworkStatus
+    parseEther
   };
 }
