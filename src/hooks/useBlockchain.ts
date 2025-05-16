@@ -1,286 +1,254 @@
-// src/hooks/useBlockchain.ts - Enhanced with better error handling
+// src/hooks/useBlockchain.ts
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount } from 'wagmi';
-import { tokenStakingService, formatEther } from '../services/blockchain';
-import { TokenBalance, StakeInfo, TransactionState } from '../types';
-import { errorLogger } from '../utils/error-logger';
+import { tokenStakingService, UnbondingRequest } from '../services/blockchain';
+import { useAuth } from './useAuth';
+import { ethers } from 'ethers';
 
-interface BlockchainState {
-  balances: TokenBalance;
-  stakeInfo: StakeInfo;
-  loading: boolean;
-  error: string | null;
-  transaction: TransactionState;
-}
+export function useBlockchain() {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nsiBalance, setNsiBalance] = useState<bigint>(BigInt(0));
+  const [stakedBalance, setStakedBalance] = useState<bigint>(BigInt(0));
+  const [votingPower, setVotingPower] = useState<bigint>(BigInt(0));
+  const [availableVotingPower, setAvailableVotingPower] = useState<bigint>(BigInt(0));
+  const [unbondingRequests, setUnbondingRequests] = useState<UnbondingRequest[]>([]);
+  const [networkStatus, setNetworkStatus] = useState<'connected' | 'connecting' | 'error'>('connecting');
+  const { user } = useAuth();
 
-interface UseBlockchainReturn extends BlockchainState {
-  refreshBalances: () => Promise<void>;
-  stakeTokens: (amount: string) => Promise<boolean>;
-  withdrawTokens: (amount: string) => Promise<boolean>;
-  completeUnwrap: (requestIndex: number) => Promise<boolean>;
-  clearTransaction: () => void;
-}
-
-export function useBlockchain(): UseBlockchainReturn {
-  const { address, isConnected } = useAccount();
-  
-  const [state, setState] = useState<BlockchainState>({
-    balances: {
-      available: BigInt(0),
-      staked: BigInt(0),
-      votingPower: BigInt(0),
-      locked: BigInt(0),
-    },
-    stakeInfo: {
-      amount: BigInt(0),
-      votingPower: BigInt(0),
-      unbondingRequests: [],
-    },
-    loading: false,
-    error: null,
-    transaction: {
-      hash: null,
-      status: 'idle',
-      error: null,
-      receipt: null,
-    },
-  });
-
-  // Auto-refresh balances when connected
-  useEffect(() => {
-    if (isConnected && address) {
-      refreshBalances();
-      
-      // Set up polling interval
-      const interval = setInterval(refreshBalances, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [isConnected, address]);
-
-  // Refresh all blockchain data
-  const refreshBalances = useCallback(async () => {
-    if (!address) return;
+  // Get network status
+  const getNetworkStatus = useCallback(() => {
+    // Access the network status from the service
+    // This requires exposing a method in the TokenStakingService
+    // If not available, we can handle it at the hook level
+    const status = tokenStakingService.getNetworkStatus ? 
+      tokenStakingService.getNetworkStatus() : 
+      'connected';
     
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
+    setNetworkStatus(status as 'connected' | 'connecting' | 'error');
+    return status;
+  }, []);
+
+  // Fetch NSI token balance
+  const fetchNSIBalance = useCallback(async (address?: string) => {
     try {
-      // Fetch all balances in parallel - note we're using the enhanced service
-      // methods that now have proper error handling with fallbacks
-      const [
-        nsiBalance,
-        stakedBalance,
-        votingPower,
-        availableVotingPower,
-      ] = await Promise.all([
-        tokenStakingService.getNSIBalance(address).catch(err => {
-          errorLogger.log('useBlockchain', err, { method: 'getNSIBalance', address });
-          return BigInt(0);
-        }),
-        tokenStakingService.getStakedBalance(address).catch(err => {
-          errorLogger.log('useBlockchain', err, { method: 'getStakedBalance', address });
-          return BigInt(0);
-        }),
-        tokenStakingService.getVotingPower(address).catch(err => {
-          errorLogger.log('useBlockchain', err, { method: 'getVotingPower', address });
-          return BigInt(0);
-        }),
-        tokenStakingService.getAvailableVotingPower(address).catch(err => {
-          errorLogger.log('useBlockchain', err, { method: 'getAvailableVotingPower', address });
-          return BigInt(0);
-        }),
-      ]);
+      const userAddress = address || (user?.walletAddress as string);
       
-      // Fetch unbonding requests separately since it might not exist yet
-      let unbondingRequests: any[] = [];
-      try {
-        unbondingRequests = await tokenStakingService.getUnbondingRequests(address);
-      } catch (error) {
-        errorLogger.log('useBlockchain', error, { method: 'getUnbondingRequests', address });
-        unbondingRequests = [];
+      if (!userAddress) {
+        setNsiBalance(BigInt(0));
+        return BigInt(0);
       }
       
-      // Calculate locked amount
-      const lockedAmount = unbondingRequests.reduce((sum, req) => sum + req.amount, BigInt(0));
-      
-      setState(prev => ({
-        ...prev,
-        balances: {
-          available: nsiBalance,
-          staked: stakedBalance,
-          votingPower: votingPower,
-          locked: lockedAmount,
-        },
-        stakeInfo: {
-          amount: stakedBalance,
-          votingPower: availableVotingPower,
-          unbondingRequests: unbondingRequests || [],
-        },
-        loading: false,
-      }));
-    } catch (error: any) {
-      console.error('Failed to refresh balances:', error);
-      errorLogger.log('useBlockchain', error, { method: 'refreshBalances', address });
-      
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error.message || 'Failed to refresh balances',
-      }));
+      const balance = await tokenStakingService.getNSIBalance(userAddress);
+      setNsiBalance(balance);
+      return balance;
+    } catch (err: any) {
+      console.error('Failed to fetch NSI balance:', err);
+      return BigInt(0);
     }
-  }, [address]);
+  }, [user]);
 
-  // Stake NSI tokens
-  const stakeTokens = useCallback(async (amount: string): Promise<boolean> => {
-    if (!address) return false;
-    
-    setState(prev => ({
-      ...prev,
-      transaction: { hash: null, status: 'pending', error: null, receipt: null },
-    }));
+  // Fetch staked balance
+  const fetchStakedBalance = useCallback(async (address?: string) => {
+    try {
+      const userAddress = address || (user?.walletAddress as string);
+      
+      if (!userAddress) {
+        setStakedBalance(BigInt(0));
+        return BigInt(0);
+      }
+      
+      const balance = await tokenStakingService.getStakedBalance(userAddress);
+      setStakedBalance(balance);
+      return balance;
+    } catch (err: any) {
+      console.error('Failed to fetch staked balance:', err);
+      return BigInt(0);
+    }
+  }, [user]);
+
+  // Fetch voting power
+  const fetchVotingPower = useCallback(async (address?: string) => {
+    try {
+      const userAddress = address || (user?.walletAddress as string);
+      
+      if (!userAddress) {
+        setVotingPower(BigInt(0));
+        return BigInt(0);
+      }
+      
+      const power = await tokenStakingService.getVotingPower(userAddress);
+      setVotingPower(power);
+      return power;
+    } catch (err: any) {
+      console.error('Failed to fetch voting power:', err);
+      return BigInt(0);
+    }
+  }, [user]);
+
+  // Fetch available voting power
+  const fetchAvailableVotingPower = useCallback(async (address?: string) => {
+    try {
+      const userAddress = address || (user?.walletAddress as string);
+      
+      if (!userAddress) {
+        setAvailableVotingPower(BigInt(0));
+        return BigInt(0);
+      }
+      
+      const power = await tokenStakingService.getAvailableVotingPower(userAddress);
+      setAvailableVotingPower(power);
+      return power;
+    } catch (err: any) {
+      console.error('Failed to fetch available voting power:', err);
+      return BigInt(0);
+    }
+  }, [user]);
+
+  // Fetch unbonding requests
+  const fetchUnbondingRequests = useCallback(async (address?: string) => {
+    try {
+      const userAddress = address || (user?.walletAddress as string);
+      
+      if (!userAddress) {
+        setUnbondingRequests([]);
+        return [];
+      }
+      
+      const requests = await tokenStakingService.getUnbondingRequests(userAddress);
+      setUnbondingRequests(requests);
+      return requests;
+    } catch (err: any) {
+      console.error('Failed to fetch unbonding requests:', err);
+      return [];
+    }
+  }, [user]);
+
+  // Wrap (stake) tokens
+  const wrapTokens = useCallback(async (amount: string) => {
+    setLoading(true);
+    setError(null);
     
     try {
       const result = await tokenStakingService.wrapTokens(amount);
       
-      setState(prev => ({
-        ...prev,
-        transaction: { ...prev.transaction, hash: result.hash },
-      }));
+      // Refresh balances after wrapping
+      if (user?.walletAddress) {
+        await fetchNSIBalance();
+        await fetchStakedBalance();
+        await fetchVotingPower();
+        await fetchAvailableVotingPower();
+      }
       
-      // Wait for transaction
-      const receipt = await result.wait();
-      
-      setState(prev => ({
-        ...prev,
-        transaction: { hash: result.hash, status: 'success', error: null, receipt },
-      }));
-      
-      // Refresh balances
-      await refreshBalances();
-      
-      return true;
-    } catch (error: any) {
-      console.error('Failed to stake tokens:', error);
-      errorLogger.log('useBlockchain', error, { method: 'stakeTokens', amount, address });
-      
-      setState(prev => ({
-        ...prev,
-        transaction: { 
-          hash: null, 
-          status: 'error', 
-          error: error.message || 'Failed to stake tokens', 
-          receipt: null 
-        },
-      }));
-      return false;
+      return result;
+    } catch (err: any) {
+      console.error('Failed to wrap tokens:', err);
+      setError(`Failed to stake tokens: ${err.message}`);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-  }, [address, refreshBalances]);
+  }, [user, fetchNSIBalance, fetchStakedBalance, fetchVotingPower, fetchAvailableVotingPower]);
 
-  // Request to withdraw tokens
-  const withdrawTokens = useCallback(async (amount: string): Promise<boolean> => {
-    if (!address) return false;
-    
-    setState(prev => ({
-      ...prev,
-      transaction: { hash: null, status: 'pending', error: null, receipt: null },
-    }));
+  // Request token unwrap (unbonding)
+  const requestUnwrap = useCallback(async (amount: string) => {
+    setLoading(true);
+    setError(null);
     
     try {
       const result = await tokenStakingService.requestUnwrap(amount);
       
-      setState(prev => ({
-        ...prev,
-        transaction: { ...prev.transaction, hash: result.hash },
-      }));
+      // Refresh data after request
+      if (user?.walletAddress) {
+        await fetchStakedBalance();
+        await fetchVotingPower();
+        await fetchAvailableVotingPower();
+        await fetchUnbondingRequests();
+      }
       
-      // Wait for transaction
-      const receipt = await result.wait();
-      
-      setState(prev => ({
-        ...prev,
-        transaction: { hash: result.hash, status: 'success', error: null, receipt },
-      }));
-      
-      // Refresh balances
-      await refreshBalances();
-      
-      return true;
-    } catch (error: any) {
-      console.error('Failed to request withdrawal:', error);
-      errorLogger.log('useBlockchain', error, { method: 'withdrawTokens', amount, address });
-      
-      setState(prev => ({
-        ...prev,
-        transaction: { 
-          hash: null, 
-          status: 'error', 
-          error: error.message || 'Failed to request withdrawal', 
-          receipt: null 
-        },
-      }));
-      return false;
+      return result;
+    } catch (err: any) {
+      console.error('Failed to request unwrap:', err);
+      setError(`Failed to request token unstake: ${err.message}`);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-  }, [address, refreshBalances]);
+  }, [user, fetchStakedBalance, fetchVotingPower, fetchAvailableVotingPower, fetchUnbondingRequests]);
 
-  // Complete withdrawal after unbonding period
-  const completeUnwrap = useCallback(async (requestIndex: number): Promise<boolean> => {
-    if (!address) return false;
-    
-    setState(prev => ({
-      ...prev,
-      transaction: { hash: null, status: 'pending', error: null, receipt: null },
-    }));
+  // Complete unwrap (after unbonding period)
+  const completeUnwrap = useCallback(async (requestIndex: number) => {
+    setLoading(true);
+    setError(null);
     
     try {
       const result = await tokenStakingService.completeUnwrap(requestIndex);
       
-      setState(prev => ({
-        ...prev,
-        transaction: { ...prev.transaction, hash: result.hash },
-      }));
+      // Refresh data after completion
+      if (user?.walletAddress) {
+        await fetchNSIBalance();
+        await fetchUnbondingRequests();
+      }
       
-      // Wait for transaction
-      const receipt = await result.wait();
-      
-      setState(prev => ({
-        ...prev,
-        transaction: { hash: result.hash, status: 'success', error: null, receipt },
-      }));
-      
-      // Refresh balances
-      await refreshBalances();
-      
-      return true;
-    } catch (error: any) {
-      console.error('Failed to complete withdrawal:', error);
-      errorLogger.log('useBlockchain', error, { method: 'completeUnwrap', requestIndex, address });
-      
-      setState(prev => ({
-        ...prev,
-        transaction: { 
-          hash: null, 
-          status: 'error', 
-          error: error.message || 'Failed to complete withdrawal', 
-          receipt: null 
-        },
-      }));
-      return false;
+      return result;
+    } catch (err: any) {
+      console.error('Failed to complete unwrap:', err);
+      setError(`Failed to complete token unstake: ${err.message}`);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-  }, [address, refreshBalances]);
+  }, [user, fetchNSIBalance, fetchUnbondingRequests]);
 
-  // Clear transaction state
-  const clearTransaction = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      transaction: { hash: null, status: 'idle', error: null, receipt: null },
-    }));
+  // Format ether for display
+  const formatEther = useCallback((value: bigint | string): string => {
+    try {
+      return ethers.formatEther(value);
+    } catch (error) {
+      return '0';
+    }
   }, []);
 
+  // Parse ether from string
+  const parseEther = useCallback((value: string): bigint => {
+    try {
+      return ethers.parseEther(value);
+    } catch (error) {
+      return BigInt(0);
+    }
+  }, []);
+
+  // Initialize with user's data
+  useEffect(() => {
+    if (user?.walletAddress) {
+      fetchNSIBalance();
+      fetchStakedBalance();
+      fetchVotingPower();
+      fetchAvailableVotingPower();
+      fetchUnbondingRequests();
+    }
+    
+    getNetworkStatus();
+  }, [user, fetchNSIBalance, fetchStakedBalance, fetchVotingPower, fetchAvailableVotingPower, fetchUnbondingRequests, getNetworkStatus]);
+
   return {
-    ...state,
-    refreshBalances,
-    stakeTokens,
-    withdrawTokens,
+    loading,
+    error,
+    nsiBalance,
+    stakedBalance,
+    votingPower,
+    availableVotingPower,
+    unbondingRequests,
+    networkStatus,
+    fetchNSIBalance,
+    fetchStakedBalance,
+    fetchVotingPower,
+    fetchAvailableVotingPower,
+    fetchUnbondingRequests,
+    wrapTokens,
+    requestUnwrap,
     completeUnwrap,
-    clearTransaction,
+    formatEther,
+    parseEther,
+    getNetworkStatus
   };
 }

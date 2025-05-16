@@ -1,19 +1,16 @@
 // src/hooks/useAuctions.ts
-import { useState, useCallback } from 'react';
-import { useAccount } from 'wagmi';
-import { evermarkAuctionService } from '../services/blockchain';
-import { errorLogger } from '../utils/error-logger';
-import { AuctionData } from '../types/blockchain.types';
+import { useState, useEffect, useCallback } from 'react';
+import { evermarkAuctionService, EvermarkAuctionData } from '../services/blockchain';
+import { useAuth } from './useAuth';
+import { ethers } from 'ethers';
 
 export function useAuctions() {
-  const { address, isConnected } = useAccount();
-  const [activeAuctions, setActiveAuctions] = useState<string[]>([]);
-  const [auctionDetails, setAuctionDetails] = useState<Map<string, AuctionData>>(new Map());
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<boolean>(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  
+  const [activeAuctions, setActiveAuctions] = useState<string[]>([]);
+  const [auctionDetails, setAuctionDetails] = useState<{ [auctionId: string]: EvermarkAuctionData }>({});
+  const { user } = useAuth();
+
   // Fetch active auctions
   const fetchActiveAuctions = useCallback(async () => {
     setLoading(true);
@@ -22,46 +19,37 @@ export function useAuctions() {
     try {
       const auctions = await evermarkAuctionService.getActiveAuctions();
       setActiveAuctions(auctions);
-      
-      // Fetch details for each auction
-      const detailsMap = new Map<string, AuctionData>();
-      for (const auctionId of auctions) {
-        const details = await evermarkAuctionService.getAuctionDetails(auctionId);
-        if (details) {
-          detailsMap.set(auctionId, details);
-        }
-      }
-      setAuctionDetails(detailsMap);
+      return auctions;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to fetch auctions';
-      errorLogger.log('useAuctions', err, { method: 'fetchActiveAuctions' });
-      setError(errorMessage);
+      console.error('Failed to fetch active auctions:', err);
+      setError('Failed to fetch active auctions');
+      setActiveAuctions([]);
+      return [];
     } finally {
       setLoading(false);
     }
   }, []);
-  
-  // Get auction details
-  const getAuctionDetails = useCallback(async (auctionId: string) => {
-    // Check if we already have the details
-    if (auctionDetails.has(auctionId)) {
-      return auctionDetails.get(auctionId);
-    }
-    
+
+  // Fetch auction details
+  const fetchAuctionDetails = useCallback(async (auctionId: string) => {
     try {
       const details = await evermarkAuctionService.getAuctionDetails(auctionId);
+      
       if (details) {
-        // Update the details map
-        setAuctionDetails(prev => new Map(prev).set(auctionId, details));
+        setAuctionDetails(prev => ({
+          ...prev,
+          [auctionId]: details
+        }));
       }
+      
       return details;
     } catch (err: any) {
-      errorLogger.log('useAuctions', err, { method: 'getAuctionDetails', auctionId });
+      console.error(`Failed to fetch auction details for ${auctionId}:`, err);
       return null;
     }
-  }, [auctionDetails]);
-  
-  // Create auction
+  }, []);
+
+  // Create new auction
   const createAuction = useCallback(async (
     nftContract: string,
     tokenId: string,
@@ -69,125 +57,115 @@ export function useAuctions() {
     reservePrice: string,
     duration: number
   ) => {
-    if (!address) return false;
-    
-    setActionLoading(true);
-    setActionError(null);
+    setLoading(true);
+    setError(null);
     
     try {
-      const { wait } = await evermarkAuctionService.createAuction(
+      const result = await evermarkAuctionService.createAuction(
         nftContract,
         tokenId,
         startingPrice,
         reservePrice,
         duration
       );
-      await wait();
       
-      // Refresh auctions
+      // Refresh auctions after creation
       await fetchActiveAuctions();
-      return true;
+      return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to create auction';
-      errorLogger.log('useAuctions', err, {
-        method: 'createAuction',
-        nftContract,
-        tokenId,
-        startingPrice,
-        reservePrice,
-        duration
-      });
-      setActionError(errorMessage);
-      return false;
+      console.error('Failed to create auction:', err);
+      setError(`Failed to create auction: ${err.message}`);
+      throw err;
     } finally {
-      setActionLoading(false);
+      setLoading(false);
     }
-  }, [address, fetchActiveAuctions]);
-  
-  // Place bid
+  }, [fetchActiveAuctions]);
+
+  // Place bid on auction
   const placeBid = useCallback(async (auctionId: string, amount: string) => {
-    if (!address) return false;
-    
-    setActionLoading(true);
-    setActionError(null);
+    setLoading(true);
+    setError(null);
     
     try {
-      const { wait } = await evermarkAuctionService.placeBid(auctionId, amount);
-      await wait();
+      const result = await evermarkAuctionService.placeBid(auctionId, amount);
       
-      // Refresh auction details
-      await getAuctionDetails(auctionId);
-      return true;
+      // Refresh auction details after bid
+      await fetchAuctionDetails(auctionId);
+      return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to place bid';
-      errorLogger.log('useAuctions', err, { method: 'placeBid', auctionId, amount });
-      setActionError(errorMessage);
-      return false;
+      console.error(`Failed to place bid on auction ${auctionId}:`, err);
+      setError(`Failed to place bid: ${err.message}`);
+      throw err;
     } finally {
-      setActionLoading(false);
+      setLoading(false);
     }
-  }, [address, getAuctionDetails]);
-  
+  }, [fetchAuctionDetails]);
+
   // Finalize auction
   const finalizeAuction = useCallback(async (auctionId: string) => {
-    if (!address) return false;
-    
-    setActionLoading(true);
-    setActionError(null);
+    setLoading(true);
+    setError(null);
     
     try {
-      const { wait } = await evermarkAuctionService.finalizeAuction(auctionId);
-      await wait();
+      const result = await evermarkAuctionService.finalizeAuction(auctionId);
       
-      // Refresh auctions
+      // Refresh auctions after finalization
       await fetchActiveAuctions();
-      return true;
+      return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to finalize auction';
-      errorLogger.log('useAuctions', err, { method: 'finalizeAuction', auctionId });
-      setActionError(errorMessage);
-      return false;
+      console.error(`Failed to finalize auction ${auctionId}:`, err);
+      setError(`Failed to finalize auction: ${err.message}`);
+      throw err;
     } finally {
-      setActionLoading(false);
+      setLoading(false);
     }
-  }, [address, fetchActiveAuctions]);
-  
+  }, [fetchActiveAuctions]);
+
   // Cancel auction
   const cancelAuction = useCallback(async (auctionId: string) => {
-    if (!address) return false;
-    
-    setActionLoading(true);
-    setActionError(null);
+    setLoading(true);
+    setError(null);
     
     try {
-      const { wait } = await evermarkAuctionService.cancelAuction(auctionId);
-      await wait();
+      const result = await evermarkAuctionService.cancelAuction(auctionId);
       
-      // Refresh auctions
+      // Refresh auctions after cancellation
       await fetchActiveAuctions();
-      return true;
+      return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to cancel auction';
-      errorLogger.log('useAuctions', err, { method: 'cancelAuction', auctionId });
-      setActionError(errorMessage);
-      return false;
+      console.error(`Failed to cancel auction ${auctionId}:`, err);
+      setError(`Failed to cancel auction: ${err.message}`);
+      throw err;
     } finally {
-      setActionLoading(false);
+      setLoading(false);
     }
-  }, [address, fetchActiveAuctions]);
-  
+  }, [fetchActiveAuctions]);
+
+  // Format ether for display
+  const formatEther = useCallback((value: bigint | string): string => {
+    try {
+      return ethers.formatEther(value);
+    } catch (error) {
+      return '0';
+    }
+  }, []);
+
+  // Initialize with active auctions
+  useEffect(() => {
+    fetchActiveAuctions();
+  }, [fetchActiveAuctions]);
+
   return {
-    activeAuctions,
-    auctionDetails,
     loading,
     error,
-    actionLoading,
-    actionError,
+    activeAuctions,
+    auctionDetails,
     fetchActiveAuctions,
-    getAuctionDetails,
+    fetchAuctionDetails,
     createAuction,
     placeBid,
     finalizeAuction,
     cancelAuction,
+    formatEther
   };
 }

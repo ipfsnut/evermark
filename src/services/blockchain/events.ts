@@ -1,5 +1,6 @@
+// src/services/blockchain/events.ts
 import { EventEmitter } from 'events';
-import { contractService } from './contracts';
+import { evermarkNFTService } from './EvermarkNFTService';
 import { CONTRACT_ADDRESSES } from '../../config/constants';
 
 class EventListener {
@@ -14,8 +15,8 @@ class EventListener {
   // Start listening to blockchain events
   async startListening() {
     // Set up listeners for Evermark NFT events
-    const evermarkContract = contractService['getContract'](
-      CONTRACT_ADDRESSES.EVERMARK_NFT,
+    const evermarkContract = evermarkNFTService.getContract(
+      CONTRACT_ADDRESSES.BOOKMARK_NFT,
       [
         "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
         "event Mint(address indexed to, uint256 indexed tokenId, string uri)"
@@ -26,7 +27,7 @@ class EventListener {
     const transferHandler = (from: string, to: string, tokenId: bigint) => {
       this.emitter.emit('evermark:transfer', { from, to, tokenId: tokenId.toString() });
       // Clear relevant cache
-      contractService.clearCache('tokensOfOwner');
+      evermarkNFTService.clearCache('tokensOfOwner');
     };
     
     evermarkContract.on('Transfer', transferHandler);
@@ -36,7 +37,7 @@ class EventListener {
     const mintHandler = (to: string, tokenId: bigint, uri: string) => {
       this.emitter.emit('evermark:mint', { to, tokenId: tokenId.toString(), uri });
       // Clear relevant cache
-      contractService.clearCache('tokensOfOwner');
+      evermarkNFTService.clearCache('tokensOfOwner');
     };
     
     // Only add if the event exists in your contract
@@ -57,8 +58,8 @@ class EventListener {
   // Clean up listeners
   stopListening() {
     // Remove all contract event listeners
-    const evermarkContract = contractService['getContract'](
-      CONTRACT_ADDRESSES.EVERMARK_NFT,
+    const evermarkContract = evermarkNFTService.getContract(
+      CONTRACT_ADDRESSES.BOOKMARK_NFT,
       []
     );
     

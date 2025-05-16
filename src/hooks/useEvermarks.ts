@@ -1,228 +1,148 @@
 // src/hooks/useEvermarks.ts
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount } from 'wagmi';
-import { evermarkService } from '../services/evermark';
-import { evermarkVotingService } from '../services/blockchain';
-import { Evermark, CreateEvermarkInput } from '../types/evermark.types';
+import { evermarkNFTService, evermarkVotingService, EvermarkData } from '../services/blockchain';
+import { useAuth } from './useAuth';
 
-interface EvermarksState {
-  evermarks: Evermark[];
-  userEvermarks: Evermark[];
-  loading: boolean;
-  error: string | null;
-  creating: boolean;
-  selectedEvermark: Evermark | null;
-}
+export function useEvermarks() {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [userEvermarks, setUserEvermarks] = useState<string[]>([]);
+  const [evermarkDetails, setEvermarkDetails] = useState<{ [tokenId: string]: EvermarkData }>({});
+  const [totalEvermarks, setTotalEvermarks] = useState<number>(0);
+  const { user } = useAuth();
 
-interface UseEvermarksReturn extends EvermarksState {
-  createEvermark: (input: CreateEvermarkInput) => Promise<Evermark | null>;
-  fetchEvermark: (tokenId: string) => Promise<Evermark | null>;
-  fetchUserEvermarks: () => Promise<void>;
-  selectEvermark: (evermark: Evermark | null) => void;
-  refreshEvermarks: () => Promise<void>;
-  searchEvermarks: (query: string) => Promise<Evermark[]>;
-  list: (userAddress?: string) => Promise<Evermark[]>;
-  vote: (evermarkId: string, amount: string) => Promise<boolean>;
-  getVotes: (evermarkId: string) => Promise<bigint>;
-}
-
-export function useEvermarks(): UseEvermarksReturn {
-  const { address, isConnected } = useAccount();
-  
-  const [state, setState] = useState<EvermarksState>({
-    evermarks: [],
-    userEvermarks: [],
-    loading: false,
-    error: null,
-    creating: false,
-    selectedEvermark: null,
-  });
-
-  // Fetch user's evermarks when connected
-  useEffect(() => {
-    if (isConnected && address) {
-      fetchUserEvermarks();
-    } else {
-      setState(prev => ({ ...prev, userEvermarks: [] }));
-    }
-  }, [isConnected, address]);
-
-  // Create a new evermark
-  const createEvermark = useCallback(async (input: CreateEvermarkInput): Promise<Evermark | null> => {
-    setState(prev => ({ ...prev, creating: true, error: null }));
-    
+  // Fetch total number of evermarks
+  const fetchTotalEvermarks = useCallback(async () => {
     try {
-      const evermark = await evermarkService.create(input);
-      
-      // Add to user's evermarks
-      setState(prev => ({
-        ...prev,
-        userEvermarks: [evermark, ...prev.userEvermarks],
-        evermarks: [evermark, ...prev.evermarks],
-        creating: false,
-      }));
-      
-      return evermark;
-    } catch (error: any) {
-      console.error('Failed to create evermark:', error);
-      setState(prev => ({
-        ...prev,
-        creating: false,
-        error: error.message || 'Failed to create evermark',
-      }));
-      return null;
-    }
-  }, []);
-
-  // Fetch a single evermark by token ID
-  const fetchEvermark = useCallback(async (tokenId: string): Promise<Evermark | null> => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const evermark = await evermarkService.fetch(tokenId);
-      
-      if (evermark) {
-        // Update state with the fetched evermark
-        setState(prev => {
-          const exists = prev.evermarks.find(e => e.id === evermark.id);
-          return {
-            ...prev,
-            evermarks: exists 
-              ? prev.evermarks.map(e => e.id === evermark.id ? evermark : e)
-              : [...prev.evermarks, evermark],
-            loading: false,
-          };
-        });
-      } else {
-        setState(prev => ({ ...prev, loading: false }));
-      }
-      
-      return evermark;
-    } catch (error: any) {
-      console.error('Failed to fetch evermark:', error);
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error.message || 'Failed to fetch evermark',
-      }));
-      return null;
+      const total = await evermarkNFTService.getTotalEvermarks();
+      setTotalEvermarks(total);
+      return total;
+    } catch (err: any) {
+      console.error('Failed to fetch total evermarks:', err);
+      return 0;
     }
   }, []);
 
   // Fetch user's evermarks
-  const fetchUserEvermarks = useCallback(async () => {
-    if (!address) return;
-    
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const userEvermarks = await evermarkService.list(address);
-      
-      setState(prev => ({
-        ...prev,
-        userEvermarks,
-        loading: false,
-      }));
-    } catch (error: any) {
-      console.error('Failed to fetch user evermarks:', error);
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error.message || 'Failed to fetch user evermarks',
-      }));
-    }
-  }, [address]);
-
-  // Select an evermark for detailed view
-  const selectEvermark = useCallback((evermark: Evermark | null) => {
-    setState(prev => ({ ...prev, selectedEvermark: evermark }));
-  }, []);
-
-  // Refresh all evermarks
-  const refreshEvermarks = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
+  const fetchUserEvermarks = useCallback(async (address?: string) => {
+    setLoading(true);
+    setError(null);
     
     try {
-      // Fetch both all evermarks and user evermarks in parallel
-      const [allEvermarks, userEvermarks] = await Promise.all([
-        evermarkService.list(),
-        address ? evermarkService.list(address) : Promise.resolve([]),
-      ]);
+      const userAddress = address || (user?.walletAddress as string);
       
-      setState(prev => ({
-        ...prev,
-        evermarks: allEvermarks,
-        userEvermarks,
-        loading: false,
-      }));
-    } catch (error: any) {
-      console.error('Failed to refresh evermarks:', error);
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error.message || 'Failed to refresh evermarks',
-      }));
-    }
-  }, [address]);
-
-  // Search evermarks
-  const searchEvermarks = useCallback(async (query: string): Promise<Evermark[]> => {
-    try {
-      return await evermarkService.search(query);
-    } catch (error: any) {
-      console.error('Search failed:', error);
-      throw error;
-    }
-  }, []);
-
-  // List evermarks (with optional user filter)
-  const list = useCallback(async (userAddress?: string): Promise<Evermark[]> => {
-    try {
-      return await evermarkService.list(userAddress);
-    } catch (error: any) {
-      console.error('Failed to list evermarks:', error);
-      throw error;
-    }
-  }, []);
-
-  // Vote on an evermark - Updated to use evermarkVotingService directly
-  const vote = useCallback(async (evermarkId: string, amount: string): Promise<boolean> => {
-    try {
-      const { wait } = await evermarkVotingService.delegateVotes(evermarkId, amount);
-      await wait();
-      
-      // After successful vote, refresh the evermark data
-      if (state.selectedEvermark?.id === evermarkId) {
-        await fetchEvermark(evermarkId);
+      if (!userAddress) {
+        setUserEvermarks([]);
+        return [];
       }
       
-      return true;
-    } catch (error: any) {
-      console.error('Vote failed:', error);
-      throw error;
+      const evermarks = await evermarkNFTService.getUserEvermarks(userAddress);
+      setUserEvermarks(evermarks);
+      return evermarks;
+    } catch (err: any) {
+      console.error('Failed to fetch user evermarks:', err);
+      setError('Failed to fetch your evermarks');
+      setUserEvermarks([]);
+      return [];
+    } finally {
+      setLoading(false);
     }
-  }, [state.selectedEvermark?.id, fetchEvermark]);
+  }, [user]);
 
-  // Get vote count for an evermark - Updated to use evermarkVotingService directly
-  const getVotes = useCallback(async (evermarkId: string): Promise<bigint> => {
+  // Fetch evermark details
+  const fetchEvermarkDetails = useCallback(async (tokenId: string) => {
+    setLoading(true);
+    
     try {
-      return await evermarkVotingService.getEvermarkVotes(evermarkId);
-    } catch (error: any) {
-      console.error('Failed to get votes:', error);
-      throw error;
+      const details = await evermarkNFTService.getEvermark(tokenId);
+      
+      if (details) {
+        setEvermarkDetails(prev => ({
+          ...prev,
+          [tokenId]: details
+        }));
+      }
+      
+      return details;
+    } catch (err: any) {
+      console.error(`Failed to fetch evermark details for ${tokenId}:`, err);
+      return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
+  // Get evermark votes
+  const getEvermarkVotes = useCallback(async (evermarkId: string) => {
+    try {
+      return await evermarkVotingService.getEvermarkVotes(evermarkId);
+    } catch (err: any) {
+      console.error(`Failed to fetch votes for evermark ${evermarkId}:`, err);
+      return BigInt(0);
+    }
+  }, []);
+
+  // Create new evermark
+  const createEvermark = useCallback(async (metadataUri: string, title: string, author: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await evermarkNFTService.mintEvermark(metadataUri, title, author);
+      // Refresh user's evermarks after creation
+      await fetchUserEvermarks();
+      return result;
+    } catch (err: any) {
+      console.error('Failed to create evermark:', err);
+      setError(`Failed to create evermark: ${err.message}`);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchUserEvermarks]);
+
+  // Update evermark metadata
+  const updateEvermarkMetadata = useCallback(async (tokenId: string, metadataURI: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await evermarkNFTService.updateEvermarkMetadata(tokenId, metadataURI);
+      // Refresh evermark details after update
+      await fetchEvermarkDetails(tokenId);
+      return result;
+    } catch (err: any) {
+      console.error(`Failed to update evermark ${tokenId}:`, err);
+      setError(`Failed to update evermark: ${err.message}`);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchEvermarkDetails]);
+
+  // Initialize with total evermarks
+  useEffect(() => {
+    fetchTotalEvermarks();
+  }, [fetchTotalEvermarks]);
+
+  // Initialize with user's evermarks if user is logged in
+  useEffect(() => {
+    if (user?.walletAddress) {
+      fetchUserEvermarks();
+    }
+  }, [user, fetchUserEvermarks]);
+
   return {
-    ...state,
-    createEvermark,
-    fetchEvermark,
+    loading,
+    error,
+    userEvermarks,
+    evermarkDetails,
+    totalEvermarks,
     fetchUserEvermarks,
-    selectEvermark,
-    refreshEvermarks,
-    searchEvermarks,
-    list,
-    vote,
-    getVotes,
+    fetchEvermarkDetails,
+    fetchTotalEvermarks,
+    getEvermarkVotes,
+    createEvermark,
+    updateEvermarkMetadata
   };
 }

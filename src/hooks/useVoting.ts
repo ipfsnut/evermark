@@ -1,150 +1,191 @@
 // src/hooks/useVoting.ts
-import { useState, useCallback } from 'react';
-import { useAccount } from 'wagmi';
+import { useState, useEffect, useCallback } from 'react';
 import { evermarkVotingService } from '../services/blockchain';
-import { errorLogger } from '../utils/error-logger';
+import { useAuth } from './useAuth';
+import { ethers } from 'ethers';
 
 export function useVoting() {
-  const { address, isConnected } = useAccount();
-  const [votes, setVotes] = useState<bigint>(BigInt(0));
-  const [userVotes, setUserVotes] = useState<bigint>(BigInt(0));
-  const [loading, setLoading] = useState(false);
-  const [votingLoading, setVotingLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [votingError, setVotingError] = useState<string | null>(null);
-  const [cycle, setCycle] = useState<number>(0);
+  const [currentCycle, setCurrentCycle] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [cycleEvermarks, setCycleEvermarks] = useState<string[]>([]);
+  const [userVotes, setUserVotes] = useState<Map<string, bigint>>(new Map());
+  const [totalUserVotes, setTotalUserVotes] = useState<bigint>(BigInt(0));
+  const { user } = useAuth();
 
-  // Fetch evermark votes - renamed for consistency
-  const getEvermarkVotes = useCallback(async (evermarkId: string) => {
-    setLoading(true);
-    setError(null);
-    
+  // Get current voting cycle
+  const getCurrentCycle = useCallback(async () => {
     try {
-      const totalVotes = await evermarkVotingService.getEvermarkVotes(evermarkId);
-      setVotes(totalVotes);
-      return totalVotes;
+      const cycle = await evermarkVotingService.getCurrentCycle();
+      setCurrentCycle(cycle);
+      return cycle;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to fetch votes';
-      errorLogger.log('useVoting', err, { method: 'getEvermarkVotes', evermarkId });
-      setError(errorMessage);
-      return BigInt(0);
-    } finally {
-      setLoading(false);
+      console.error('Failed to get current cycle:', err);
+      return 0;
     }
   }, []);
 
-  // Fetch user's votes for an evermark
-  const getUserVotes = useCallback(async (evermarkId: string) => {
-    if (!address) return BigInt(0);
-    
-    setLoading(true);
-    setError(null);
-    
+  // Get time remaining in current cycle
+  const getTimeRemaining = useCallback(async () => {
     try {
+      const time = await evermarkVotingService.getTimeRemainingInCurrentCycle();
+      setTimeRemaining(time);
+      return time;
+    } catch (err: any) {
+      console.error('Failed to get time remaining:', err);
+      return 0;
+    }
+  }, []);
+
+  // Get evermarks with votes in current cycle
+  const getEvermarksInCycle = useCallback(async (cycle?: number) => {
+    try {
+      const cycleNumber = cycle ?? currentCycle;
+      const evermarks = await evermarkVotingService.getEvermarksWithVotesInCycle(cycleNumber);
+      setCycleEvermarks(evermarks);
+      return evermarks;
+    } catch (err: any) {
+      console.error('Failed to get evermarks in cycle:', err);
+      return [];
+    }
+  }, [currentCycle]);
+
+  // Get user votes for evermark
+  const getUserVotesForEvermark = useCallback(async (evermarkId: string, userAddress?: string) => {
+    try {
+      const address = userAddress || (user?.walletAddress as string);
+      
+      if (!address) {
+        return BigInt(0);
+      }
+      
       const votes = await evermarkVotingService.getUserVotesForEvermark(address, evermarkId);
-      setUserVotes(votes);
+      
+      // Update the local map
+      setUserVotes(prev => {
+        const newMap = new Map(prev);
+        newMap.set(evermarkId, votes);
+        return newMap;
+      });
+      
       return votes;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to fetch user votes';
-      errorLogger.log('useVoting', err, { method: 'getUserVotes', evermarkId, address });
-      setError(errorMessage);
+      console.error(`Failed to get user votes for evermark ${evermarkId}:`, err);
       return BigInt(0);
-    } finally {
-      setLoading(false);
     }
-  }, [address]);
+  }, [user]);
 
-  // Vote on an evermark
-  const voteOnEvermark = useCallback(async (evermarkId: string, amount: string) => {
-    if (!address) return false;
-    
-    setVotingLoading(true);
-    setVotingError(null);
-    
+  // Get total user votes in current cycle
+  const getTotalUserVotes = useCallback(async (userAddress?: string) => {
     try {
-      const { wait } = await evermarkVotingService.delegateVotes(evermarkId, amount);
-      await wait();
+      const address = userAddress || (user?.walletAddress as string);
       
-      // Refresh votes
-      await getEvermarkVotes(evermarkId);
-      if (address) await getUserVotes(evermarkId);
+      if (!address) {
+        return BigInt(0);
+      }
       
-      return true;
+      const votes = await evermarkVotingService.getTotalUserVotesInCurrentCycle(address);
+      setTotalUserVotes(votes);
+      return votes;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to vote';
-      errorLogger.log('useVoting', err, { method: 'voteOnEvermark', evermarkId, amount });
-      setVotingError(errorMessage);
-      return false;
-    } finally {
-      setVotingLoading(false);
+      console.error('Failed to get total user votes:', err);
+      return BigInt(0);
     }
-  }, [address, getEvermarkVotes, getUserVotes]);
+  }, [user]);
 
-  // Remove votes from an evermark
-  const removeVotes = useCallback(async (evermarkId: string, amount: string) => {
-    if (!address) return false;
-    
-    setVotingLoading(true);
-    setVotingError(null);
-    
-    try {
-      const { wait } = await evermarkVotingService.undelegateVotes(evermarkId, amount);
-      await wait();
-      
-      // Refresh votes
-      await getEvermarkVotes(evermarkId);
-      if (address) await getUserVotes(evermarkId);
-      
-      return true;
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to remove votes';
-      errorLogger.log('useVoting', err, { method: 'removeVotes', evermarkId, amount });
-      setVotingError(errorMessage);
-      return false;
-    } finally {
-      setVotingLoading(false);
-    }
-  }, [address, getEvermarkVotes, getUserVotes]);
-
-  // Get current cycle information
-  const fetchCycleInfo = useCallback(async () => {
+  // Delegate votes to evermark
+  const delegateVotes = useCallback(async (evermarkId: string, amount: string) => {
     setLoading(true);
     setError(null);
     
     try {
-      const [currentCycle, remaining] = await Promise.all([
-        evermarkVotingService.getCurrentCycle(),
-        evermarkVotingService.getTimeRemainingInCurrentCycle()
-      ]);
+      const result = await evermarkVotingService.delegateVotes(evermarkId, amount);
       
-      setCycle(currentCycle);
-      setTimeRemaining(remaining);
+      // Update user votes after delegation
+      if (user?.walletAddress) {
+        await getUserVotesForEvermark(evermarkId);
+        await getTotalUserVotes();
+      }
       
-      return { cycle: currentCycle, timeRemaining: remaining };
+      return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to fetch cycle info';
-      errorLogger.log('useVoting', err, { method: 'fetchCycleInfo' });
-      setError(errorMessage);
-      return { cycle: 0, timeRemaining: 0 };
+      console.error(`Failed to delegate votes to evermark ${evermarkId}:`, err);
+      setError(`Failed to delegate votes: ${err.message}`);
+      throw err;
     } finally {
       setLoading(false);
     }
+  }, [user, getUserVotesForEvermark, getTotalUserVotes]);
+
+  // Undelegate votes from evermark
+  const undelegateVotes = useCallback(async (evermarkId: string, amount: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await evermarkVotingService.undelegateVotes(evermarkId, amount);
+      
+      // Update user votes after undelegation
+      if (user?.walletAddress) {
+        await getUserVotesForEvermark(evermarkId);
+        await getTotalUserVotes();
+      }
+      
+      return result;
+    } catch (err: any) {
+      console.error(`Failed to undelegate votes from evermark ${evermarkId}:`, err);
+      setError(`Failed to undelegate votes: ${err.message}`);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, getUserVotesForEvermark, getTotalUserVotes]);
+
+  // Format ether for display
+  const formatEther = useCallback((value: bigint | string): string => {
+    try {
+      return ethers.formatEther(value);
+    } catch (error) {
+      return '0';
+    }
   }, []);
 
+  // Initialize with current cycle data
+  useEffect(() => {
+    const init = async () => {
+      const cycle = await getCurrentCycle();
+      await getTimeRemaining();
+      await getEvermarksInCycle(cycle);
+      
+      if (user?.walletAddress) {
+        await getTotalUserVotes();
+      }
+    };
+    
+    init();
+    
+    // Set up interval to update time remaining
+    const interval = setInterval(getTimeRemaining, 10000); // every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, [getCurrentCycle, getTimeRemaining, getEvermarksInCycle, getTotalUserVotes, user]);
+
   return {
-    votes,
-    userVotes,
-    cycle,
-    timeRemaining,
     loading,
-    votingLoading,
     error,
-    votingError,
-    getEvermarkVotes, // Renamed from getBookmarkVotes
-    getUserVotes,
-    voteOnEvermark, // Renamed from voteOnBookmark
-    removeVotes,
-    fetchCycleInfo,
+    currentCycle,
+    timeRemaining,
+    cycleEvermarks,
+    userVotes,
+    totalUserVotes,
+    getCurrentCycle,
+    getTimeRemaining,
+    getEvermarksInCycle,
+    getUserVotesForEvermark,
+    getTotalUserVotes,
+    delegateVotes,
+    undelegateVotes,
+    formatEther
   };
 }

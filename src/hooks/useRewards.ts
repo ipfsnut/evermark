@@ -1,96 +1,103 @@
 // src/hooks/useRewards.ts
-import { useState, useCallback } from 'react';
-import { useAccount } from 'wagmi';
+import { useState, useEffect, useCallback } from 'react';
 import { evermarkRewardsService } from '../services/blockchain';
-import { errorLogger } from '../utils/error-logger';
+import { useAuth } from './useAuth';
+import { ethers } from 'ethers';
 
 export function useRewards() {
-  const { address, isConnected } = useAccount();
-  const [pendingRewards, setPendingRewards] = useState<bigint>(BigInt(0));
   const [loading, setLoading] = useState<boolean>(false);
-  const [claimLoading, setClaimLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [claimError, setClaimError] = useState<string | null>(null);
-  const [claimSuccess, setClaimSuccess] = useState<boolean>(false);
-  
+  const [pendingRewards, setPendingRewards] = useState<bigint>(BigInt(0));
+  const { user } = useAuth();
+
   // Fetch pending rewards
-  const fetchPendingRewards = useCallback(async () => {
-    if (!address) return;
-    
-    setLoading(true);
-    setError(null);
-    
+  const fetchPendingRewards = useCallback(async (address?: string) => {
     try {
-      const rewards = await evermarkRewardsService.getPendingRewards(address);
+      const userAddress = address || (user?.walletAddress as string);
+      
+      if (!userAddress) {
+        setPendingRewards(BigInt(0));
+        return BigInt(0);
+      }
+      
+      const rewards = await evermarkRewardsService.getPendingRewards(userAddress);
       setPendingRewards(rewards);
+      return rewards;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to fetch rewards';
-      errorLogger.log('useRewards', err, { method: 'fetchPendingRewards', address });
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch pending rewards:', err);
+      return BigInt(0);
     }
-  }, [address]);
-  
+  }, [user]);
+
   // Claim rewards
   const claimRewards = useCallback(async () => {
-    if (!address) return false;
-    
-    setClaimLoading(true);
-    setClaimError(null);
-    setClaimSuccess(false);
-    
-    try {
-      const { wait } = await evermarkRewardsService.claimRewards();
-      await wait();
-      
-      // Refresh rewards after successful claim
-      await fetchPendingRewards();
-      setClaimSuccess(true);
-      return true;
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to claim rewards';
-      errorLogger.log('useRewards', err, { method: 'claimRewards', address });
-      setClaimError(errorMessage);
-      return false;
-    } finally {
-      setClaimLoading(false);
-    }
-  }, [address, fetchPendingRewards]);
-  
-  // Update staking power (to ensure rewards are calculated correctly)
-  const updateStakingPower = useCallback(async () => {
-    if (!address) return false;
-    
     setLoading(true);
     setError(null);
     
     try {
-      const { wait } = await evermarkRewardsService.updateStakingPower();
-      await wait();
+      const result = await evermarkRewardsService.claimRewards();
       
-      // Refresh rewards after updating staking power
-      await fetchPendingRewards();
-      return true;
+      // Refresh pending rewards after claiming
+      if (user?.walletAddress) {
+        await fetchPendingRewards();
+      }
+      
+      return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to update staking power';
-      errorLogger.log('useRewards', err, { method: 'updateStakingPower', address });
-      setError(errorMessage);
-      return false;
+      console.error('Failed to claim rewards:', err);
+      setError(`Failed to claim rewards: ${err.message}`);
+      throw err;
     } finally {
       setLoading(false);
     }
-  }, [address, fetchPendingRewards]);
-  
+  }, [user, fetchPendingRewards]);
+
+  // Update staking power
+  const updateStakingPower = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await evermarkRewardsService.updateStakingPower();
+      
+      // Refresh pending rewards after update
+      if (user?.walletAddress) {
+        await fetchPendingRewards();
+      }
+      
+      return result;
+    } catch (err: any) {
+      console.error('Failed to update staking power:', err);
+      setError(`Failed to update staking power: ${err.message}`);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, fetchPendingRewards]);
+
+  // Format ether for display
+  const formatEther = useCallback((value: bigint | string): string => {
+    try {
+      return ethers.formatEther(value);
+    } catch (error) {
+      return '0';
+    }
+  }, []);
+
+  // Initialize with user's pending rewards
+  useEffect(() => {
+    if (user?.walletAddress) {
+      fetchPendingRewards();
+    }
+  }, [user, fetchPendingRewards]);
+
   return {
-    pendingRewards,
     loading,
-    claimLoading,
     error,
-    claimError,
-    claimSuccess,
+    pendingRewards,
     fetchPendingRewards,
     claimRewards,
     updateStakingPower,
+    formatEther
   };
 }
