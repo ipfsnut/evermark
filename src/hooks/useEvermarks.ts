@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { evermarkService } from '../services/evermark';
+import { evermarkVotingService } from '../services/blockchain';
 import { Evermark, CreateEvermarkInput } from '../types/evermark.types';
 
 interface EvermarksState {
@@ -184,10 +185,11 @@ export function useEvermarks(): UseEvermarksReturn {
     }
   }, []);
 
-  // Vote on an evermark
+  // Vote on an evermark - Updated to use evermarkVotingService directly
   const vote = useCallback(async (evermarkId: string, amount: string): Promise<boolean> => {
     try {
-      await evermarkService.vote(evermarkId, amount);
+      const { wait } = await evermarkVotingService.delegateVotes(evermarkId, amount);
+      await wait();
       
       // After successful vote, refresh the evermark data
       if (state.selectedEvermark?.id === evermarkId) {
@@ -201,10 +203,10 @@ export function useEvermarks(): UseEvermarksReturn {
     }
   }, [state.selectedEvermark?.id, fetchEvermark]);
 
-  // Get vote count for an evermark
+  // Get vote count for an evermark - Updated to use evermarkVotingService directly
   const getVotes = useCallback(async (evermarkId: string): Promise<bigint> => {
     try {
-      return await evermarkService.getVotes(evermarkId);
+      return await evermarkVotingService.getEvermarkVotes(evermarkId);
     } catch (error: any) {
       console.error('Failed to get votes:', error);
       throw error;

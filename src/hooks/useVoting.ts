@@ -15,8 +15,8 @@ export function useVoting() {
   const [cycle, setCycle] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
-  // Fetch bookmark votes
-  const getBookmarkVotes = useCallback(async (evermarkId: string) => {
+  // Fetch evermark votes - renamed for consistency
+  const getEvermarkVotes = useCallback(async (evermarkId: string) => {
     setLoading(true);
     setError(null);
     
@@ -26,7 +26,7 @@ export function useVoting() {
       return totalVotes;
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to fetch votes';
-      errorLogger.log('useVoting', err, { method: 'getBookmarkVotes', evermarkId });
+      errorLogger.log('useVoting', err, { method: 'getEvermarkVotes', evermarkId });
       setError(errorMessage);
       return BigInt(0);
     } finally {
@@ -34,7 +34,7 @@ export function useVoting() {
     }
   }, []);
 
-  // Fetch user's votes for a bookmark
+  // Fetch user's votes for an evermark
   const getUserVotes = useCallback(async (evermarkId: string) => {
     if (!address) return BigInt(0);
     
@@ -55,8 +55,8 @@ export function useVoting() {
     }
   }, [address]);
 
-  // Vote on a bookmark
-  const voteOnBookmark = useCallback(async (evermarkId: string, amount: string) => {
+  // Vote on an evermark
+  const voteOnEvermark = useCallback(async (evermarkId: string, amount: string) => {
     if (!address) return false;
     
     setVotingLoading(true);
@@ -67,21 +67,21 @@ export function useVoting() {
       await wait();
       
       // Refresh votes
-      await getBookmarkVotes(evermarkId);
+      await getEvermarkVotes(evermarkId);
       if (address) await getUserVotes(evermarkId);
       
       return true;
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to vote';
-      errorLogger.log('useVoting', err, { method: 'voteOnBookmark', evermarkId, amount });
+      errorLogger.log('useVoting', err, { method: 'voteOnEvermark', evermarkId, amount });
       setVotingError(errorMessage);
       return false;
     } finally {
       setVotingLoading(false);
     }
-  }, [address, getBookmarkVotes, getUserVotes]);
+  }, [address, getEvermarkVotes, getUserVotes]);
 
-  // Remove votes from a bookmark
+  // Remove votes from an evermark
   const removeVotes = useCallback(async (evermarkId: string, amount: string) => {
     if (!address) return false;
     
@@ -93,7 +93,7 @@ export function useVoting() {
       await wait();
       
       // Refresh votes
-      await getBookmarkVotes(evermarkId);
+      await getEvermarkVotes(evermarkId);
       if (address) await getUserVotes(evermarkId);
       
       return true;
@@ -105,7 +105,7 @@ export function useVoting() {
     } finally {
       setVotingLoading(false);
     }
-  }, [address, getBookmarkVotes, getUserVotes]);
+  }, [address, getEvermarkVotes, getUserVotes]);
 
   // Get current cycle information
   const fetchCycleInfo = useCallback(async () => {
@@ -141,9 +141,9 @@ export function useVoting() {
     votingLoading,
     error,
     votingError,
-    getBookmarkVotes,
+    getEvermarkVotes, // Renamed from getBookmarkVotes
     getUserVotes,
-    voteOnBookmark,
+    voteOnEvermark, // Renamed from voteOnBookmark
     removeVotes,
     fetchCycleInfo,
   };

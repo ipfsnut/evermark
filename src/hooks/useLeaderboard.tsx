@@ -1,12 +1,12 @@
 // src/hooks/useLeaderboard.ts
 import { useState, useEffect, useCallback } from 'react';
-import { contractService } from '../services/blockchain';
+import { evermarkLeaderboardService, evermarkVotingService } from '../services/blockchain';
 import { errorLogger } from '../utils/error-logger';
-import { BookmarkRank } from '../types/blockchain.types';
+import { EvermarkRank } from '../types/blockchain.types';
 
 export function useLeaderboard() {
   const [currentWeek, setCurrentWeek] = useState<number>(0);
-  const [topBookmarks, setTopBookmarks] = useState<BookmarkRank[]>([]);
+  const [topBookmarks, setTopBookmarks] = useState<EvermarkRank[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isFinalized, setIsFinalized] = useState<boolean>(false);
@@ -14,7 +14,8 @@ export function useLeaderboard() {
   // Get current voting cycle from the voting contract
   const fetchCurrentWeek = useCallback(async () => {
     try {
-      const cycle = await contractService.getCurrentCycle();
+      // Use evermarkVotingService for cycle-related functionality
+      const cycle = await evermarkVotingService.getCurrentCycle();
       setCurrentWeek(cycle);
       return cycle;
     } catch (err: any) {
@@ -30,15 +31,12 @@ export function useLeaderboard() {
     
     try {
       // Check if the leaderboard is finalized for this week
-      const finalized = await contractService.isLeaderboardFinalized(week);
+      const finalized = await evermarkLeaderboardService.isLeaderboardFinalized(week);
       setIsFinalized(finalized);
       
-      // Get top bookmarks
-      const bookmarks = await contractService.getWeeklyTopBookmarks(week, count);
+      // Get top evermarks
+      const bookmarks = await evermarkLeaderboardService.getWeeklyTopEvermarks(week, count);
       setTopBookmarks(bookmarks);
-      
-      // Fetch metadata for each bookmark (if needed)
-      // You could add this step if you want to display more information
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to fetch leaderboard';
       errorLogger.log('useLeaderboard', err, { method: 'fetchTopBookmarks', week, count });
@@ -48,12 +46,12 @@ export function useLeaderboard() {
     }
   }, [currentWeek]);
   
-  // Get rank for a specific bookmark
-  const getBookmarkRank = useCallback(async (week: number, bookmarkId: string) => {
+  // Get rank for a specific evermark
+  const getEvermarkRank = useCallback(async (week: number, evermarkId: string) => {
     try {
-      return await contractService.getBookmarkRankForWeek(week, bookmarkId);
+      return await evermarkLeaderboardService.getEvermarkRankForWeek(week, evermarkId);
     } catch (err: any) {
-      errorLogger.log('useLeaderboard', err, { method: 'getBookmarkRank', week, bookmarkId });
+      errorLogger.log('useLeaderboard', err, { method: 'getEvermarkRank', week, evermarkId });
       return 0;
     }
   }, []);
@@ -77,7 +75,7 @@ export function useLeaderboard() {
     error,
     isFinalized,
     fetchTopBookmarks,
-    getBookmarkRank,
+    getEvermarkRank, // Updated method name for consistency
     fetchCurrentWeek,
   };
 }
