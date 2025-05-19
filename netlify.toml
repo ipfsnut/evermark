@@ -22,5 +22,4 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-[[plugins]]
-  package = "@netlify/plugin-typescript"
+
