@@ -5,7 +5,7 @@ import { useAuth } from './useAuth';
 import { Evermark, CreateEvermarkInput, ContentType } from '../types/evermark.types';
 
 // Temporarily disable index functionality until after Netlify deployment
-const ENABLE_INDEX = false;
+const ENABLE_INDEX = true;
 
 export function useEvermarks() {
   const [loading, setLoading] = useState<boolean>(false);
