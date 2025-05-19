@@ -3,17 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { evermarkNFTService, evermarkVotingService } from '../services/blockchain';
 import { useAuth } from './useAuth';
 import { Evermark, CreateEvermarkInput, ContentType } from '../types/evermark.types';
-import { ipfsIndexService, EvermarkIndexItem } from '../services/storage/ipfsIndex';
 
-// Options for list function
-export interface ListOptions {
-  userAddress?: string;  // If specified, get only this user's evermarks
-  query?: string;        // Search query
-  category?: string;     // Filter by category/tag
-  sortBy?: 'recent' | 'popular'; // Sort order
-  limit?: number;        // Limit results
-  offset?: number;       // Pagination offset
-}
+// Temporarily disable index functionality until after Netlify deployment
+const ENABLE_INDEX = false;
 
 export function useEvermarks() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -59,40 +51,21 @@ export function useEvermarks() {
     };
   }, [stringToContentType]);
 
-  // Convert index item to Evermark
-  const convertIndexItemToEvermark = useCallback((item: EvermarkIndexItem): Evermark => {
-    return {
-      id: item.id,
-      title: item.title || 'Untitled',
-      author: item.author || 'Unknown',
-      description: '',
-      userId: item.owner || '',
-      verified: false,
-      createdAt: new Date(item.createdAt),
-      updatedAt: new Date(item.updatedAt),
-      metadata: {
-        tokenId: item.id,
-        external_url: item.metadataURI,
-        type: stringToContentType(item.contentType),
-        tags: item.tags || [],
-        voteCount: item.voteCount || 0
-      }
-    };
-  }, [stringToContentType]);
-
   // Select an evermark for detail view
   const selectEvermark = useCallback((evermark: Evermark | null) => {
     setSelectedEvermark(evermark);
   }, []);
 
   // List evermarks (used by HomePage)
-  const list = useCallback(async (options: ListOptions = {}): Promise<Evermark[]> => {
+  const list = useCallback(async () => {
     setLoading(true);
     
     try {
-      // If a specific user address is provided, get just their evermarks
-      if (options.userAddress) {
-        const tokenIds = await evermarkNFTService.getUserEvermarks(options.userAddress);
+      // Get a list of evermarks to display
+      // For now, use the current user's evermarks
+      const addr = user?.walletAddress;
+      if (addr) {
+        const tokenIds = await evermarkNFTService.getUserEvermarks(addr);
         const evermarks: Evermark[] = [];
         
         for (const tokenId of tokenIds) {
@@ -106,65 +79,30 @@ export function useEvermarks() {
           }
         }
         
+        // Sort by recent first
+        return evermarks.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      }
+      
+      // If no user, try to get some recent evermarks from the contract
+      const total = await evermarkNFTService.getTotalEvermarks();
+      if (total > 0) {
+        const evermarks: Evermark[] = [];
+        // Get up to 10 of the most recent tokens
+        const startId = Math.max(1, total - 10);
+        for (let i = total; i >= startId; i--) {
+          try {
+            const tokenId = i.toString();
+            const details = await evermarkNFTService.getEvermark(tokenId);
+            if (details && details.exists) {
+              evermarks.push(convertToEvermark(tokenId, details));
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch evermark ${i}:`, err);
+          }
+        }
         return evermarks;
       }
       
-      // For global discovery, use the IPFS index
-      try {
-        console.log("Using IPFS index for evermark discovery", options);
-        
-        let indexedEvermarks: EvermarkIndexItem[] = [];
-        
-        // Get the right set of evermarks based on options
-        if (options.category) {
-          indexedEvermarks = await ipfsIndexService.getEvermarksByCategory(
-            options.category,
-            options.limit || 20
-          );
-        } else if (options.query) {
-          indexedEvermarks = await ipfsIndexService.searchEvermarks(
-            options.query,
-            options.limit || 20
-          );
-        } else if (options.sortBy === 'popular') {
-          indexedEvermarks = await ipfsIndexService.getPopularEvermarks(
-            options.limit || 10
-          );
-        } else {
-          // Default to recent evermarks
-          indexedEvermarks = await ipfsIndexService.getRecentEvermarks(
-            options.limit || 10
-          );
-        }
-        
-        // Convert to Evermark format
-        return indexedEvermarks.map(convertIndexItemToEvermark);
-      } catch (indexError) {
-        console.error("Failed to fetch from IPFS index:", indexError);
-        
-        // Fall back to user's evermarks if global query fails
-        const addr = user?.walletAddress;
-        if (addr) {
-          console.log("Falling back to user's evermarks");
-          const tokenIds = await evermarkNFTService.getUserEvermarks(addr);
-          const evermarks: Evermark[] = [];
-          
-          for (const tokenId of tokenIds) {
-            try {
-              const details = await evermarkNFTService.getEvermark(tokenId);
-              if (details && details.exists) {
-                evermarks.push(convertToEvermark(tokenId, details));
-              }
-            } catch (err) {
-              console.warn(`Failed to fetch evermark ${tokenId}:`, err);
-            }
-          }
-          
-          return evermarks;
-        }
-      }
-      
-      // If all else fails, return an empty array
       return [];
     } catch (err: any) {
       console.error('List evermarks failed:', err);
@@ -172,7 +110,7 @@ export function useEvermarks() {
     } finally {
       setLoading(false);
     }
-  }, [user, convertToEvermark, convertIndexItemToEvermark]);
+  }, [user, convertToEvermark]);
 
   // Fetch user's evermarks
   const fetchUserEvermarks = useCallback(async (address?: string) => {
@@ -216,52 +154,32 @@ export function useEvermarks() {
     setLoading(true);
     
     try {
-      // First try to fetch from the blockchain
-      try {
-        const details = await evermarkNFTService.getEvermark(id);
-        
-        if (!details || !details.exists) {
-          throw new Error('Evermark not found on blockchain');
-        }
-        
-        const evermark = convertToEvermark(id, details);
-        
-        // Get votes
-        try {
-          const votes = await evermarkVotingService.getEvermarkVotes(id);
-          if (evermark.metadata) {
-            evermark.metadata.voteCount = Number(votes);
-          }
-        } catch (err) {
-          console.warn(`Failed to fetch votes for ${id}:`, err);
-        }
-        
-        return evermark;
-      } catch (blockchainErr) {
-        console.warn(`Failed to fetch evermark ${id} from blockchain:`, blockchainErr);
-        
-        // Try to fetch from the index instead
-        try {
-          const index = await ipfsIndexService.getLatestIndex();
-          const indexedEvermark = index.evermarks.find(e => e.id === id);
-          
-          if (!indexedEvermark) {
-            throw new Error('Evermark not found in index');
-          }
-          
-          return convertIndexItemToEvermark(indexedEvermark);
-        } catch (indexErr) {
-          console.error(`Failed to fetch evermark ${id} from index:`, indexErr);
-          throw new Error('Evermark not found');
-        }
+      const details = await evermarkNFTService.getEvermark(id);
+      
+      if (!details || !details.exists) {
+        throw new Error('Evermark not found');
       }
+      
+      const evermark = convertToEvermark(id, details);
+      
+      // Get votes
+      try {
+        const votes = await evermarkVotingService.getEvermarkVotes(id);
+        if (evermark.metadata) {
+          evermark.metadata.voteCount = Number(votes);
+        }
+      } catch (err) {
+        console.warn(`Failed to fetch votes for ${id}:`, err);
+      }
+      
+      return evermark;
     } catch (err: any) {
       console.error(`Failed to fetch evermark ${id}:`, err);
       return null;
     } finally {
       setLoading(false);
     }
-  }, [convertToEvermark, convertIndexItemToEvermark]);
+  }, [convertToEvermark]);
 
   // Create new evermark
   const createEvermark = useCallback(async (input: CreateEvermarkInput) => {
@@ -275,14 +193,16 @@ export function useEvermarks() {
       const author = input.manualData?.author || 'Unknown';
       const description = input.manualData?.description || '';
       const tags = input.manualData?.tags || [];
+      
+      // Convert the content type string to the enum
       const contentType = stringToContentType(input.contentType);
       
-      // Create the evermark on the blockchain
+      // Mint the evermark NFT on the blockchain
       const result = await evermarkNFTService.mintEvermark(metadataUri, title, author);
       
-      // In a real implementation, we'd extract the token ID from the transaction receipt
-      // For now, just create a placeholder ID
-      const tokenId = result.hash.substring(0, 10); // Use part of tx hash as temporary ID
+      // Extract the token ID from the transaction result
+      // In the current implementation this is using the transaction hash temporarily
+      const tokenId = result.hash.substring(0, 10);
       
       // Create the evermark object
       const createdEvermark: Evermark = {
@@ -303,30 +223,6 @@ export function useEvermarks() {
         }
       };
       
-      // Add the evermark to our IPFS index
-      try {
-        // Convert to index item format
-        const indexItem: EvermarkIndexItem = {
-          id: tokenId,
-          title,
-          author,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          owner: user?.walletAddress || '',
-          metadataURI: metadataUri,
-          contentType: input.contentType || 'WEBSITE',
-          tags,
-          voteCount: 0
-        };
-        
-        // Update the index with the new evermark
-        await ipfsIndexService.addOrUpdateEvermark(indexItem);
-        console.log("Added new evermark to IPFS index");
-      } catch (indexError) {
-        console.error("Failed to update IPFS index:", indexError);
-        // Continue anyway - the evermark was created on chain
-      }
-      
       return createdEvermark;
     } catch (err: any) {
       console.error('Failed to create evermark:', err);
@@ -342,19 +238,10 @@ export function useEvermarks() {
   useEffect(() => {
     const fetchTotal = async () => {
       try {
-        // Try to get the total from the blockchain
         const total = await evermarkNFTService.getTotalEvermarks();
         setTotalEvermarks(total);
-      } catch (blockchainErr) {
-        console.error('Failed to fetch total evermarks from blockchain:', blockchainErr);
-        
-        // Try to get the total from the index
-        try {
-          const index = await ipfsIndexService.getLatestIndex();
-          setTotalEvermarks(index.evermarks.length);
-        } catch (indexErr) {
-          console.error('Failed to fetch total evermarks from index:', indexErr);
-        }
+      } catch (err) {
+        console.error('Failed to fetch total evermarks:', err);
       }
     };
     

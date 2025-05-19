@@ -101,6 +101,7 @@ const ProfilePage: React.FC = () => {
     }
     
     const amount = parseFloat(stakeAmount);
+    // Ensure we're using Number type for comparison
     const availableAmount = Number(formatEther(balances.available));
     
     if (isNaN(amount) || amount <= 0) {
@@ -125,39 +126,40 @@ const ProfilePage: React.FC = () => {
 
   // Handle withdrawal with validation
   const handleWithdraw = async () => {
-  setWithdrawError(null);
-  clearTransaction();
-  
-  if (!withdrawAmount) {
-    setWithdrawError('Please enter an amount to withdraw');
-    return;
-  }
-  
-  const amount = parseFloat(withdrawAmount);
-  const stakedAmount = Number(formatEther(balances.staked));
-  
-  if (isNaN(amount) || amount <= 0) {
-    setWithdrawError('Please enter a valid positive amount');
-    return;
-  }
-  
-  if (amount > stakedAmount) {
-    setWithdrawError(`You only have ${stakedAmount.toFixed(2)} tokens staked`);
-    return;
-  }
-  
-  try {
-    setIsWithdrawing(true);
+    setWithdrawError(null);
+    clearTransaction();
     
-    // Ensure we're passing a clean string value that can be properly 
-    // converted to BigInt in the tokenStakingService
-    const cleanAmount = amount.toString();
-    await withdrawTokens(cleanAmount);
-  } catch (error: any) {
-    setWithdrawError(error.message || 'Failed to request withdrawal');
-    setIsWithdrawing(false);
-  }
-};
+    if (!withdrawAmount) {
+      setWithdrawError('Please enter an amount to withdraw');
+      return;
+    }
+    
+    const amount = parseFloat(withdrawAmount);
+    // Ensure we're using Number type for comparison
+    const stakedAmount = Number(formatEther(balances.staked));
+    
+    if (isNaN(amount) || amount <= 0) {
+      setWithdrawError('Please enter a valid positive amount');
+      return;
+    }
+    
+    if (amount > stakedAmount) {
+      setWithdrawError(`You only have ${stakedAmount.toFixed(2)} tokens staked`);
+      return;
+    }
+    
+    try {
+      setIsWithdrawing(true);
+      
+      // Ensure we're passing a clean string value that can be properly 
+      // converted to BigInt in the tokenStakingService
+      const cleanAmount = amount.toString();
+      await withdrawTokens(cleanAmount);
+    } catch (error: any) {
+      setWithdrawError(error.message || 'Failed to request withdrawal');
+      setIsWithdrawing(false);
+    }
+  };
 
   // Handle claiming unbonded tokens
   const handleClaimUnbonded = async (index: number) => {
@@ -217,8 +219,17 @@ const ProfilePage: React.FC = () => {
         locked: formatEther(balances.locked)
       },
       unbondingRequests: stakeInfo.unbondingRequests.map(req => ({
-        amount: formatEther(req.amount),
-        releaseTime: new Date(req.releaseTime * 1000).toISOString()
+        // Ensure amount is safely converted
+        amount: formatEther(typeof req.amount === 'bigint' ? req.amount : BigInt(String(req.amount || 0))),
+        // Ensure releaseTime is properly converted to a timestamp
+        releaseTime: new Date(
+          typeof req.releaseTime === 'bigint' 
+            ? Number(req.releaseTime) 
+            : (typeof req.releaseTime === 'number' 
+                ? req.releaseTime 
+                : Number(req.releaseTime || 0)) 
+          * 1000
+        ).toISOString()
       }))
     };
     
@@ -383,13 +394,13 @@ const ProfilePage: React.FC = () => {
 
         <div className="bg-parchment-texture p-6 rounded-lg shadow-md border border-wood-light/30 animate-text-in" style={{animationDelay: "0.2s"}}>
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-warpcast/10 mr-4">
+                        <div className="p-3 rounded-full bg-warpcast/10 mr-4">
               <StarsIcon className="h-6 w-6 text-warpcast" />
             </div>
             <div>
               <p className="text-sm font-serif font-medium text-ink-light tracking-tight">Staked Tokens</p>
               <p className="text-2xl font-serif font-bold text-ink-dark tracking-tight">
-                                {formatEther(balances.staked)}
+                {formatEther(balances.staked)}
               </p>
             </div>
           </div>
@@ -430,23 +441,22 @@ const ProfilePage: React.FC = () => {
         <SectionContainer title="Token Actions" className="h-full">
           {/* Transaction Status */}
           {transaction.hash && (
-  <StatusMessage
-    type={transaction.status === 'success' ? 'success' : 'error'}
-    message={
-      transaction.status === 'success' 
-        ? 'Transaction confirmed!' 
-        : transaction.status === 'pending' 
-          ? 'Transaction pending...'
-          : 'Transaction failed'
-    }
-    subMessage={transaction.status === 'success' 
-      ? `Transaction hash: ${transaction.hash.slice(0, 8)}...${transaction.hash.slice(-8)}`
-      : transaction.error || undefined
-    }
-    className="mb-4"
-  />
-)}
-
+            <StatusMessage
+              type={transaction.status === 'success' ? 'success' : 'error'}
+              message={
+                transaction.status === 'success' 
+                  ? 'Transaction confirmed!' 
+                  : transaction.status === 'pending' 
+                    ? 'Transaction pending...'
+                    : 'Transaction failed'
+              }
+              subMessage={transaction.status === 'success' 
+                ? `Transaction hash: ${transaction.hash.slice(0, 8)}...${transaction.hash.slice(-8)}`
+                : transaction.error || undefined
+              }
+              className="mb-4"
+            />
+          )}
           
           <div className="flex flex-col gap-4">
             {/* Stake Form */}
@@ -572,28 +582,40 @@ const ProfilePage: React.FC = () => {
         <RewardsPanel />
       </div>
 
-      {/* Unbonding Requests */}
+      {/* Unbonding Requests - with BigInt fixes */}
       {stakeInfo.unbondingRequests && stakeInfo.unbondingRequests.length > 0 && (
-  <SectionContainer title="Unbonding Requests" className="mb-6">
-    <div className="space-y-3">
-      {stakeInfo.unbondingRequests.map((request, index) => {
-        const now = Math.floor(Date.now() / 1000);
-        
-        // Convert releaseTime to a number for comparison
-        const releaseTimeNum = typeof request.releaseTime === 'bigint' 
-          ? Number(request.releaseTime) 
-          : request.releaseTime;
-        
-        const isAvailable = releaseTimeNum <= now;
-        const timeRemaining = releaseTimeNum - now;
-        
-        // Calculate days, hours, minutes remaining
-        const days = Math.floor(timeRemaining / 86400);
-        const hours = Math.floor((timeRemaining % 86400) / 3600);
-        const minutes = Math.floor((timeRemaining % 3600) / 60);
-
+        <SectionContainer title="Unbonding Requests" className="mb-6">
+          <div className="space-y-3">
+            {stakeInfo.unbondingRequests.map((request, index) => {
+              // Current time in seconds
+              const now = Math.floor(Date.now() / 1000);
               
-              // Format time remaining
+              // Safe conversion of releaseTime to a number for calculations
+              let releaseTimeNum: number;
+              
+              if (typeof request.releaseTime === 'bigint') {
+                releaseTimeNum = Number(request.releaseTime);
+              } else if (typeof request.releaseTime === 'number') {
+                releaseTimeNum = request.releaseTime;
+              } else if (typeof request.releaseTime === 'string') {
+                releaseTimeNum = parseInt(request.releaseTime, 10) || 0;
+              } else {
+                // Fallback for undefined or null
+                releaseTimeNum = 0;
+              }
+              
+              // Determine if the request is available for claiming
+              const isAvailable = releaseTimeNum <= now;
+              
+              // Calculate time remaining (prevent negative values)
+              const timeRemaining = Math.max(0, releaseTimeNum - now);
+              
+              // Calculate days, hours, minutes remaining
+              const days = Math.floor(timeRemaining / 86400);
+              const hours = Math.floor((timeRemaining % 86400) / 3600);
+              const minutes = Math.floor((timeRemaining % 3600) / 60);
+              
+              // Format time remaining text
               let timeRemainingText = '';
               if (days > 0) {
                 timeRemainingText = `${days}d ${hours}h remaining`;
@@ -605,11 +627,16 @@ const ProfilePage: React.FC = () => {
                 timeRemainingText = 'less than a minute remaining';
               }
               
+              // Safe conversion of amount for display
+              const amountToDisplay = typeof request.amount === 'bigint'
+                ? formatEther(request.amount)
+                : formatEther(BigInt(String(request.amount || 0)));
+              
               return (
                 <div key={index} className="flex items-center justify-between p-4 bg-parchment-light rounded-lg border border-wood-light/30">
                   <div>
                     <div className="flex items-center font-serif">
-                      <span className="text-lg font-medium text-ink-dark">{formatEther(request.amount)} NSI</span>
+                      <span className="text-lg font-medium text-ink-dark">{amountToDisplay} NSI</span>
                       {isAvailable && (
                         <span className="ml-2 text-xs text-green-600 flex items-center">
                           <CheckCircleIcon className="h-3 w-3 mr-1" /> Ready to claim
@@ -619,7 +646,7 @@ const ProfilePage: React.FC = () => {
                     
                     {isAvailable ? (
                       <div className="text-sm text-ink-light">
-                        Available since {new Date(request.releaseTime * 1000).toLocaleDateString()}
+                        Available since {new Date(releaseTimeNum * 1000).toLocaleDateString()}
                       </div>
                     ) : (
                       <div className="text-sm text-ink-light flex items-center">

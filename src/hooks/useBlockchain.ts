@@ -247,8 +247,14 @@ export function useBlockchain() {
   }, [user, fetchNSIBalance, fetchStakedBalance, fetchVotingPower, fetchAvailableVotingPower, fetchUnbondingRequests, getNetworkStatus]);
 
   // Calculate total locked balance from unbonding requests
-  const lockedBalance = unbondingRequests.reduce((total, request) => total + request.amount, BigInt(0));
-
+const lockedBalance = unbondingRequests.reduce(
+  (total, request) => total + (
+    typeof request.amount === 'bigint' 
+      ? request.amount 
+      : BigInt(request.amount || 0)
+  ), 
+  BigInt(0)
+);
   // Return the shape that the frontend expects
   return {
     loading,
