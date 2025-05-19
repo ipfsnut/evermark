@@ -61,12 +61,14 @@ export class BaseContractService {
   protected provider: JsonRpcProvider;
   protected contracts: Map<string, Contract> = new Map();
   protected cache: Map<string, { value: any; timestamp: number }> = new Map();
+  protected localStorageCache: boolean = true;
   
-  // Fallback RPC URLs - can be extended in child classes
+  // RPC management
   protected rpcUrls = [
     'https://mainnet.base.org',
     'https://base-mainnet.public.blastapi.io',
-    'https://base.llamarpc.com'
+    'https://base.llamarpc.com',
+    'https://base.blockpi.network/v1/rpc/public'
   ];
   
   protected currentRpcIndex = 0;
@@ -74,12 +76,25 @@ export class BaseContractService {
   protected networkStatus: 'connected' | 'connecting' | 'error' = 'connecting';
   protected switchingProvider = false;
   
+  // Rate limiting
+  protected lastCallTimestamp: number = 0;
+  protected callCounter: number = 0;
+  protected readonly MAX_CALLS_PER_MINUTE: number = 60;
+  protected readonly MAX_BATCH_SIZE: number = 3;
+  protected pendingRequests: Map<string, Promise<any>> = new Map();
+  
   constructor(initialRpcUrl?: string) {
     if (initialRpcUrl) {
       this.rpcUrls.unshift(initialRpcUrl); // Add user-provided URL as first option
     }
     this.provider = new JsonRpcProvider(this.rpcUrls[0]);
     this.checkConnection();
+    
+    // Set up auto-reset of call counter
+    setInterval(() => {
+      this.callCounter = 0;
+      this.lastCallTimestamp = Date.now();
+    }, 60000); // Reset every minute
   }
   
   /**
@@ -139,6 +154,13 @@ export class BaseContractService {
     } catch (error) {
       console.warn(`Provider ${this.rpcUrls[this.currentRpcIndex]} failed`);
       this.networkStatus = 'error';
+      
+      // Try another provider if this one failed
+      if (this.rpcUrls.length > 1) {
+        await sleep(1000); // Wait a bit before trying again
+        return this.switchRpcProvider();
+      }
+      
       return false;
     } finally {
       this.switchingProvider = false;
@@ -167,6 +189,69 @@ export class BaseContractService {
   }
   
   /**
+   * Rate-limit a contract method call
+   */
+  private async rateLimit(): Promise<void> {
+    const now = Date.now();
+    
+    // Check if we've exceeded the rate limit
+    if (now - this.lastCallTimestamp < 60000) { // Within a minute window
+      if (this.callCounter >= this.MAX_CALLS_PER_MINUTE) {
+        const waitTime = 60000 - (now - this.lastCallTimestamp) + 100; // Wait until next minute + buffer
+        console.warn(`Rate limit reached. Waiting ${waitTime}ms before next call.`);
+        await sleep(waitTime);
+        this.callCounter = 0;
+        this.lastCallTimestamp = Date.now();
+      }
+    } else {
+      // Reset counter for new minute
+      this.lastCallTimestamp = now;
+      this.callCounter = 0;
+    }
+    
+    this.callCounter++;
+  }
+  
+  /**
+   * Get from local storage cache
+   */
+  private getFromLocalStorageCache<T>(key: string): { value: T; timestamp: number } | null {
+    if (!this.localStorageCache) return null;
+    
+    try {
+      const cached = localStorage.getItem(`contract_cache_${key}`);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.warn('Failed to get from localStorage cache:', e);
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Save to local storage cache
+   */
+  private saveToLocalStorageCache(key: string, value: any, timestamp: number): void {
+    if (!this.localStorageCache) return;
+    
+    try {
+      // Don't cache BigInt values directly as they can't be serialized
+      const serializable = JSON.parse(JSON.stringify(value, (_, v) => 
+        typeof v === 'bigint' ? v.toString() : v
+      ));
+      
+      localStorage.setItem(`contract_cache_${key}`, JSON.stringify({ 
+        value: serializable, 
+        timestamp 
+      }));
+    } catch (e) {
+      console.warn('Failed to save to localStorage cache:', e);
+    }
+  }
+  
+  /**
    * Call contract method with caching, retries, and exponential backoff
    */
   async callContract<T>(
@@ -178,90 +263,185 @@ export class BaseContractService {
       cacheTime?: number; 
       retry?: boolean;
       maxRetries?: number;
-      retryBaseDelay?: number; 
+      retryBaseDelay?: number;
+      useLocalStorage?: boolean;
+      forceRefresh?: boolean;
     } = {}
   ): Promise<T> {
     const { 
       cache = true, 
       cacheTime = 30000, 
       retry = true,
-      maxRetries = 5,  // Maximum retry attempts
-      retryBaseDelay = 1000  // Base delay in ms (will be doubled each retry)
+      maxRetries = 5,
+      retryBaseDelay = 1000,
+      useLocalStorage = true,
+      forceRefresh = false
     } = options;
     
+    // Create a cache key
     const cacheKey = `${contract.target}_${method}_${JSON.stringify(args)}`;
     
-    // Check cache
-    if (cache) {
+    // Deduplicate identical in-flight requests
+    if (!forceRefresh && this.pendingRequests.has(cacheKey)) {
+      return this.pendingRequests.get(cacheKey)!;
+    }
+    
+    // Check memory cache first
+    if (!forceRefresh && cache) {
       const cached = this.cache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < cacheTime) {
         return cached.value;
       }
-    }
-    
-    let lastError: Error | null = null;
-    
-    // Try to call the contract with retries and exponential backoff
-    for (let attempt = 0; attempt < (retry ? maxRetries : 1); attempt++) {
-      try {
-        // If not the first attempt, wait with exponential backoff
-        if (attempt > 0) {
-          const backoffTime = calculateBackoff(attempt, retryBaseDelay);
-          console.log(`Retry attempt ${attempt} for ${method}, waiting ${Math.round(backoffTime)}ms`);
-          await sleep(backoffTime);
-        }
-        
-        const result = await contract[method](...args);
-        
-        // Cache result
-        if (cache) {
-          this.cache.set(cacheKey, { value: result, timestamp: Date.now() });
-        }
-        
-        return result;
-      } catch (error: any) {
-        lastError = error;
-        
-        // Check if error indicates we should try another provider
-        const shouldSwitchProvider = 
-          error.message?.includes('timeout') || 
-          error.message?.includes('rate limit') ||
-          error.message?.includes('unknown block') ||
-          error.message?.includes('network error');
-        
-        if (shouldSwitchProvider && attempt < maxRetries - 1) {
-          // Try another provider
-          await this.switchRpcProvider();
-          
-          // Recreate the contract with the new provider if necessary
-          if (this.contracts.has(`${contract.target.toString().toLowerCase()}_provider`)) {
-            const fragments = [...contract.interface.fragments];
-            contract = this.getContract(contract.target.toString(), fragments);
-          }
-        } else if (!retry || attempt >= maxRetries - 1) {
-          // Last attempt or retry disabled, break the loop
-          break;
+      
+      // Then check localStorage cache if enabled
+      if (useLocalStorage && this.localStorageCache) {
+        const localCached = this.getFromLocalStorageCache<T>(cacheKey);
+        if (localCached && Date.now() - localCached.timestamp < cacheTime) {
+          // Store in memory cache too
+          this.cache.set(cacheKey, localCached);
+          return localCached.value;
         }
       }
     }
     
-    // All attempts failed
-    if (lastError) {
-      errorLogger.log('contractService', lastError, { 
-        method: `${method}`,
-        args,
-        attempts: retry ? maxRetries : 1
-      });
-      throw lastError;
-    }
+    // Create the request promise
+    const requestPromise = (async () => {
+      // Apply rate limiting
+      await this.rateLimit();
+      
+      let lastError: Error | null = null;
+      
+      // Try to call the contract with retries and exponential backoff
+      for (let attempt = 0; attempt < (retry ? maxRetries : 1); attempt++) {
+        try {
+          // If not the first attempt, wait with exponential backoff
+          if (attempt > 0) {
+            const backoffTime = calculateBackoff(attempt, retryBaseDelay);
+            console.log(`Retry attempt ${attempt} for ${method}, waiting ${Math.round(backoffTime)}ms`);
+            await sleep(backoffTime);
+          }
+          
+          const result = await contract[method](...args);
+          
+          // Cache result
+          if (cache) {
+            const timestamp = Date.now();
+            this.cache.set(cacheKey, { value: result, timestamp });
+            
+            // Also cache to localStorage if enabled
+            if (useLocalStorage && this.localStorageCache) {
+              this.saveToLocalStorageCache(cacheKey, result, timestamp);
+            }
+          }
+          
+          // Remove from pending requests
+          this.pendingRequests.delete(cacheKey);
+          
+          return result;
+        } catch (error: any) {
+          lastError = error;
+          
+          // Check if error indicates we should try another provider
+          const shouldSwitchProvider = 
+            error.message?.includes('timeout') || 
+            error.message?.includes('rate limit') ||
+            error.message?.includes('unknown block') ||
+            error.message?.includes('network error') ||
+            error.message?.includes('too many requests') ||
+            error.message?.includes('server error') ||
+            error.code === 'ETIMEDOUT' ||
+            error.code === 'ECONNRESET' ||
+            error.code === -32000 || // Generic RPC error
+            error.code === -32603; // Internal error
+          
+          if (shouldSwitchProvider && attempt < maxRetries - 1) {
+            // Try another provider
+            await this.switchRpcProvider();
+            
+            // Recreate the contract with the new provider if necessary
+            if (this.contracts.has(`${contract.target.toString().toLowerCase()}_provider`)) {
+              const fragments = [...contract.interface.fragments];
+              const newContract = this.getContract(contract.target.toString(), fragments);
+              contract = newContract;
+            }
+          } else if (!retry || attempt >= maxRetries - 1) {
+            // Last attempt or retry disabled, break the loop
+            break;
+          }
+        }
+      }
+      
+      // All attempts failed
+      if (lastError) {
+        errorLogger.log('contractService', lastError, { 
+          method: `${method}`,
+          args,
+          attempts: retry ? maxRetries : 1
+        });
+        
+        // Remove from pending requests
+        this.pendingRequests.delete(cacheKey);
+        
+        throw lastError;
+      }
+      
+      // Remove from pending requests
+      this.pendingRequests.delete(cacheKey);
+      
+      throw new Error(`Contract call failed: ${method}(${JSON.stringify(args)})`);
+    })();
     
-    throw new Error(`Contract call failed: ${method}(${JSON.stringify(args)})`);
+    // Store the promise for deduplication
+    this.pendingRequests.set(cacheKey, requestPromise);
+    
+    return requestPromise;
   }
   
   /**
-   * Clear cache
+   * Call multiple contract methods in batches to avoid rate limits
+   */
+  async batchCallContract<T>(
+    contract: Contract,
+    calls: Array<{ method: string; args: any[]; }>,
+    options: {
+      batchSize?: number;
+      delayMs?: number;
+      cache?: boolean;
+      cacheTime?: number;
+    } = {}
+  ): Promise<T[]> {
+    const { 
+      batchSize = this.MAX_BATCH_SIZE, 
+      delayMs = 500,
+      cache = true,
+      cacheTime = 30000
+    } = options;
+    
+    return processBatch(
+      calls,
+      batchSize,
+      async (call) => {
+        try {
+          return await this.callContract<T>(
+            contract, 
+            call.method, 
+            call.args,
+            { cache, cacheTime }
+          );
+        } catch (e) {
+          console.error(`Error in batch call to ${call.method}:`, e);
+          throw e;
+        }
+      },
+      delayMs
+    );
+  }
+  
+  /**
+   * Clear all cache or pattern-matched keys
    */
   clearCache(pattern?: string) {
+    // Clear memory cache
     if (pattern) {
       for (const key of this.cache.keys()) {
         if (key.includes(pattern)) {
@@ -270,6 +450,23 @@ export class BaseContractService {
       }
     } else {
       this.cache.clear();
+    }
+    
+    // Clear localStorage cache if enabled
+    if (this.localStorageCache) {
+      if (pattern) {
+        for (const key of Object.keys(localStorage)) {
+          if (key.startsWith('contract_cache_') && key.includes(pattern)) {
+            localStorage.removeItem(key);
+          }
+        }
+      } else {
+        for (const key of Object.keys(localStorage)) {
+          if (key.startsWith('contract_cache_')) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
     }
   }
 
@@ -305,6 +502,32 @@ export class BaseContractService {
     } catch (error) {
       errorLogger.log('contractService', error, { method: 'getSigner' });
       throw error;
+    }
+  }
+  
+  /**
+   * Check if localStorage is available
+   */
+  private isLocalStorageAvailable(): boolean {
+    try {
+      const testKey = '__localStorage_test__';
+      localStorage.setItem(testKey, testKey);
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /**
+   * Enable or disable localStorage caching
+   */
+  setLocalStorageCaching(enabled: boolean): void {
+    if (enabled && !this.isLocalStorageAvailable()) {
+      console.warn('localStorage is not available, caching will remain disabled');
+      this.localStorageCache = false;
+    } else {
+      this.localStorageCache = enabled;
     }
   }
 }

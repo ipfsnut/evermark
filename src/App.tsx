@@ -16,6 +16,8 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 
 // Import test console for development
 import TestConsole from "./components/testing/TestConsole";
+import VotingHistoryPage from "./pages/VotingHistoryPage";
+import AuctionPage from "./pages/AuctionPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,6 +70,16 @@ function App() {
                     <ProfilePage />
                   </ErrorBoundary>
                 } />
+                <Route path="/auctions" element={
+    <ErrorBoundary component="AuctionPage">
+      <AuctionPage />
+    </ErrorBoundary>
+  } />
+  <Route path="/voting-history" element={
+    <ErrorBoundary component="VotingHistoryPage">
+      <VotingHistoryPage />
+    </ErrorBoundary>
+  } />
                 {/* Add a search route */}
                 <Route path="/search" element={
                   <ErrorBoundary component="SearchPage">
