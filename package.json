@@ -4,10 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "biome check src",
-    "preview": "vite preview"
+  "dev": "vite",
+  "build": "tsc && vite build",
+  "build:functions": "tsc --project netlify/tsconfig.json",
+  "build:all": "npm run build && npm run build:functions",
+  "lint": "biome check src",
+  "preview": "vite preview"
   },
   "dependencies": {
     "@farcaster/frame-sdk": "^0.0.45",
