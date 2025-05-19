@@ -1,5 +1,5 @@
 // src/pages/ProfilePage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useBlockchain } from '../hooks/useBlockchain';
 import { RewardsPanel } from '../components/rewards/RewardsPanel';
@@ -35,7 +35,7 @@ const ProfilePage: React.FC = () => {
     completeUnwrap,
     transaction,
     clearTransaction,
-    formatEther
+    formatEther,
   } = useBlockchain();
 
   // State for forms
@@ -52,6 +52,12 @@ const ProfilePage: React.FC = () => {
   // State for validation
   const [stakeError, setStakeError] = useState<string | null>(null);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  
+  // State for tracking specific operations
+  const [isStaking, setIsStaking] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isClaiming, setIsClaiming] = useState<number | null>(null);
+  const [addressCopied, setAddressCopied] = useState(false);
 
   // Initialize username from user data
   useEffect(() => {
@@ -60,10 +66,33 @@ const ProfilePage: React.FC = () => {
     }
   }, [user]);
 
+  // Effect to handle transaction completion
+  useEffect(() => {
+    if (transaction.status === 'success') {      
+      // Reset operation states
+      setIsStaking(false);
+      setIsWithdrawing(false);
+      setIsClaiming(null);
+      
+      // Clear transaction after display period
+      const timer = setTimeout(() => {
+        clearTransaction();
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    } else if (transaction.status === 'error') {
+      // Reset operation states on error
+      setIsStaking(false);
+      setIsWithdrawing(false);
+      setIsClaiming(null);
+    }
+  }, [transaction.status, clearTransaction]);
+
   // Handle staking with validation
   const handleStake = async () => {
     // Reset error state
     setStakeError(null);
+    clearTransaction();
     
     // Validate amount
     if (!stakeAmount) {
@@ -85,54 +114,72 @@ const ProfilePage: React.FC = () => {
     }
     
     try {
+      setIsStaking(true);
       await stakeTokens(stakeAmount);
-      setStakeAmount('');
-      setShowStakeForm(false);
+      // Form will be hidden by the transaction effect if successful
     } catch (error: any) {
       setStakeError(error.message || 'Failed to stake tokens');
+      setIsStaking(false);
     }
   };
 
   // Handle withdrawal with validation
   const handleWithdraw = async () => {
-    // Reset error state
-    setWithdrawError(null);
+  setWithdrawError(null);
+  clearTransaction();
+  
+  if (!withdrawAmount) {
+    setWithdrawError('Please enter an amount to withdraw');
+    return;
+  }
+  
+  const amount = parseFloat(withdrawAmount);
+  const stakedAmount = Number(formatEther(balances.staked));
+  
+  if (isNaN(amount) || amount <= 0) {
+    setWithdrawError('Please enter a valid positive amount');
+    return;
+  }
+  
+  if (amount > stakedAmount) {
+    setWithdrawError(`You only have ${stakedAmount.toFixed(2)} tokens staked`);
+    return;
+  }
+  
+  try {
+    setIsWithdrawing(true);
     
-    // Validate amount
-    if (!withdrawAmount) {
-      setWithdrawError('Please enter an amount to withdraw');
-      return;
-    }
-    
-    const amount = parseFloat(withdrawAmount);
-    const stakedAmount = Number(formatEther(balances.staked));
-    
-    if (isNaN(amount) || amount <= 0) {
-      setWithdrawError('Please enter a valid positive amount');
-      return;
-    }
-    
-    if (amount > stakedAmount) {
-      setWithdrawError(`You only have ${stakedAmount.toFixed(2)} tokens staked`);
-      return;
-    }
-    
+    // Ensure we're passing a clean string value that can be properly 
+    // converted to BigInt in the tokenStakingService
+    const cleanAmount = amount.toString();
+    await withdrawTokens(cleanAmount);
+  } catch (error: any) {
+    setWithdrawError(error.message || 'Failed to request withdrawal');
+    setIsWithdrawing(false);
+  }
+};
+
+  // Handle claiming unbonded tokens
+  const handleClaimUnbonded = async (index: number) => {
+    clearTransaction();
     try {
-      await withdrawTokens(withdrawAmount);
-      setWithdrawAmount('');
-      setShowWithdrawForm(false);
+      setIsClaiming(index);
+      await completeUnwrap(index);
+      // State will be reset by the transaction effect
     } catch (error: any) {
-      setWithdrawError(error.message || 'Failed to request withdrawal');
+      console.error('Failed to claim tokens:', error);
+      setIsClaiming(null);
     }
   };
 
   // Copy wallet address to clipboard
-  const copyAddress = () => {
+  const copyAddress = useCallback(() => {
     if (user?.walletAddress) {
       navigator.clipboard.writeText(user.walletAddress);
-      // Could show feedback that it was copied
+      setAddressCopied(true);
+      setTimeout(() => setAddressCopied(false), 2000);
     }
-  };
+  }, [user?.walletAddress]);
   
   // Handle profile update
   const handleProfileUpdate = async () => {
@@ -183,6 +230,19 @@ const ProfilePage: React.FC = () => {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+  };
+
+  // Reset forms when hiding them
+  const hideStakeForm = () => {
+    setShowStakeForm(false);
+    setStakeError(null);
+    setStakeAmount('');
+  };
+
+  const hideWithdrawForm = () => {
+    setShowWithdrawForm(false);
+    setWithdrawError(null);
+    setWithdrawAmount('');
   };
 
   if (!isAuthenticated || !user) {
@@ -238,10 +298,14 @@ const ProfilePage: React.FC = () => {
                   <span>{user.walletAddress?.slice(0, 6)}...{user.walletAddress?.slice(-4)}</span>
                   <button 
                     onClick={copyAddress} 
-                    className="ml-2 p-1 hover:bg-parchment rounded"
+                    className="ml-2 p-1 hover:bg-parchment rounded transition-colors"
                     aria-label="Copy wallet address"
                   >
-                    <CopyIcon className="w-3 h-3 text-warpcast" />
+                    {addressCopied ? (
+                      <CheckCircleIcon className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <CopyIcon className="w-3 h-3 text-warpcast" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -325,7 +389,7 @@ const ProfilePage: React.FC = () => {
             <div>
               <p className="text-sm font-serif font-medium text-ink-light tracking-tight">Staked Tokens</p>
               <p className="text-2xl font-serif font-bold text-ink-dark tracking-tight">
-                {formatEther(balances.staked)}
+                                {formatEther(balances.staked)}
               </p>
             </div>
           </div>
@@ -366,22 +430,23 @@ const ProfilePage: React.FC = () => {
         <SectionContainer title="Token Actions" className="h-full">
           {/* Transaction Status */}
           {transaction.hash && (
-            <StatusMessage
-              type={transaction.status === 'success' ? 'success' : 'error'}
-              message={
-                transaction.status === 'success' 
-                  ? 'Transaction confirmed!' 
-                  : transaction.status === 'pending' 
-                    ? 'Transaction pending...'
-                    : 'Transaction failed'
-              }
-              subMessage={transaction.status === 'success' 
-                ? `Transaction hash: ${transaction.hash.slice(0, 8)}...${transaction.hash.slice(-8)}`
-                : transaction.error || undefined
-              }
-              className="mb-4"
-            />
-          )}
+  <StatusMessage
+    type={transaction.status === 'success' ? 'success' : 'error'}
+    message={
+      transaction.status === 'success' 
+        ? 'Transaction confirmed!' 
+        : transaction.status === 'pending' 
+          ? 'Transaction pending...'
+          : 'Transaction failed'
+    }
+    subMessage={transaction.status === 'success' 
+      ? `Transaction hash: ${transaction.hash.slice(0, 8)}...${transaction.hash.slice(-8)}`
+      : transaction.error || undefined
+    }
+    className="mb-4"
+  />
+)}
+
           
           <div className="flex flex-col gap-4">
             {/* Stake Form */}
@@ -405,12 +470,10 @@ const ProfilePage: React.FC = () => {
                 
                 <div className="flex justify-end space-x-3 mt-4">
                   <StyledButton
-                    onClick={() => {
-                      setShowStakeForm(false);
-                      setStakeError(null);
-                    }}
+                    onClick={hideStakeForm}
                     variant="tertiary"
                     size="sm"
+                    disabled={isStaking}
                   >
                     Cancel
                   </StyledButton>
@@ -418,9 +481,10 @@ const ProfilePage: React.FC = () => {
                     onClick={handleStake}
                     variant="primary"
                     size="sm"
-                    isLoading={transaction.status === 'pending'}
+                    isLoading={isStaking}
+                    disabled={isStaking}
                   >
-                    Confirm Staking
+                    Stake Tokens
                   </StyledButton>
                 </div>
               </div>
@@ -434,6 +498,7 @@ const ProfilePage: React.FC = () => {
                 variant="primary"
                 icon={<ArrowUpIcon className="h-4 w-4" />}
                 className="w-full"
+                disabled={isStaking || isWithdrawing}
               >
                 Stake Tokens
               </StyledButton>
@@ -467,12 +532,10 @@ const ProfilePage: React.FC = () => {
                 
                 <div className="flex justify-end space-x-3 mt-4">
                   <StyledButton
-                    onClick={() => {
-                      setShowWithdrawForm(false);
-                      setWithdrawError(null);
-                    }}
+                    onClick={hideWithdrawForm}
                     variant="tertiary"
                     size="sm"
+                    disabled={isWithdrawing}
                   >
                     Cancel
                   </StyledButton>
@@ -480,7 +543,8 @@ const ProfilePage: React.FC = () => {
                     onClick={handleWithdraw}
                     variant="primary"
                     size="sm"
-                    isLoading={transaction.status === 'pending'}
+                    isLoading={isWithdrawing}
+                    disabled={isWithdrawing}
                   >
                     Request Withdrawal
                   </StyledButton>
@@ -496,6 +560,7 @@ const ProfilePage: React.FC = () => {
                 variant="secondary"
                 icon={<ArrowDownIcon className="h-4 w-4" />}
                 className="w-full"
+                disabled={isStaking || isWithdrawing}
               >
                 Withdraw Tokens
               </StyledButton>
@@ -509,17 +574,24 @@ const ProfilePage: React.FC = () => {
 
       {/* Unbonding Requests */}
       {stakeInfo.unbondingRequests && stakeInfo.unbondingRequests.length > 0 && (
-        <SectionContainer title="Unbonding Requests" className="mb-6">
-          <div className="space-y-3">
-            {stakeInfo.unbondingRequests.map((request, index) => {
-              const now = Math.floor(Date.now() / 1000);
-              const isAvailable = request.releaseTime <= now;
-              const timeRemaining = request.releaseTime - now;
-              
-              // Calculate days, hours, minutes remaining
-              const days = Math.floor(timeRemaining / 86400);
-              const hours = Math.floor((timeRemaining % 86400) / 3600);
-              const minutes = Math.floor((timeRemaining % 3600) / 60);
+  <SectionContainer title="Unbonding Requests" className="mb-6">
+    <div className="space-y-3">
+      {stakeInfo.unbondingRequests.map((request, index) => {
+        const now = Math.floor(Date.now() / 1000);
+        
+        // Convert releaseTime to a number for comparison
+        const releaseTimeNum = typeof request.releaseTime === 'bigint' 
+          ? Number(request.releaseTime) 
+          : request.releaseTime;
+        
+        const isAvailable = releaseTimeNum <= now;
+        const timeRemaining = releaseTimeNum - now;
+        
+        // Calculate days, hours, minutes remaining
+        const days = Math.floor(timeRemaining / 86400);
+        const hours = Math.floor((timeRemaining % 86400) / 3600);
+        const minutes = Math.floor((timeRemaining % 3600) / 60);
+
               
               // Format time remaining
               let timeRemainingText = '';
@@ -559,9 +631,11 @@ const ProfilePage: React.FC = () => {
                   
                   {isAvailable && (
                     <StyledButton
-                      onClick={() => completeUnwrap(index)}
+                      onClick={() => handleClaimUnbonded(index)}
                       variant="primary"
                       size="sm"
+                      isLoading={isClaiming === index}
+                      disabled={isClaiming !== null}
                     >
                       Claim Tokens
                     </StyledButton>
@@ -580,3 +654,4 @@ const ProfilePage: React.FC = () => {
 };
 
 export default ProfilePage;
+
