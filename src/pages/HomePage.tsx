@@ -1,3 +1,5 @@
+// src/pages/HomePage.tsx
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useEvermarks } from '../hooks/useEvermarks';
@@ -5,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { PlusIcon, BookmarkIcon, BookOpenIcon, SearchIcon } from 'lucide-react';
 import { Evermark } from '../types/evermark.types';
 import { CatalogDrawer } from '../components/catalog/CatalogDrawer';
+import { WeeklyIndexBrowser } from '../components/ipfs/WeeklyIndexBrowser';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -129,6 +132,9 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Weekly Index from IPFS */}
+      <WeeklyIndexBrowser className="mb-8" />
 
       {/* Recent Evermarks */}
       {recentEvermarks.length > 0 && (
